@@ -1,0 +1,7 @@
+torch
+transformers
+accelerate
+pillow
+matplotlib
+opencv-python
+requests
