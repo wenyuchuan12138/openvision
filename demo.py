@@ -77,7 +77,7 @@ def main():
 
     # 设置开放词汇检测提示词
     # 注意Grounding DINO的prompt建议用英文，并且每个类别后面加英文句号
-    text_prompt = "cat"
+    text_prompt = "cat. remote."
 
     print("仓前检测提示词：", text_prompt)
 
