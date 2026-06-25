@@ -1,7 +1,10 @@
 import os
 import requests
+import urllib3
 from PIL import Image
 import matplotlib.pyplot as plt
+
+urllib3.disable_warnings(urllib3.exceptions.InsecurePlatformWarning)
 
 from src.detector import GroundingDINODetector
 from src.visualizer import draw_detections
@@ -19,7 +22,11 @@ def download_test_image(save_path):
         "User-Agent": "Mozilla/5.0"
     }
 
-    response = requests.get(image_url, headers = headers, timeout = 30)
+    response = requests.get(image_url,
+                            headers = headers,
+                            timeout = 30,
+                            verify = False
+                        )
     response.raise_for_status()
 
     with open(save_path, "wb") as f:
