@@ -5,15 +5,7 @@ from collections import Counter
 
 def gengerate_report(detections, image_size, save_path = None):
     """
-    根据检测结果生成统计报告
-    
-    参数：
-    detections: 检测结果列表，每个元素包含 label、 score、 bbox。
-    image_size: 图片尺寸，格式为(width, height)。
-    save_path: 报告保存路径，例如outputs/report.json。
-
-    返回：
-    report: 字典格式的统计报告。 
+    根据检测结果生成统计报告 
     """
 
     width, height = image_size
