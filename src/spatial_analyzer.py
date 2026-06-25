@@ -78,13 +78,13 @@ def analyze_person_safety_by_spatial_relation(detections):
         risks = []
         
         if not has_helmet:
-            risks.append("未检测到安全帽。")
+            risks.append("未检测到安全帽")
         
         if not has_vest:
-            risks.append("未检测到反光背心。")
+            risks.append("未检测到反光背心")
 
         if not risks:
-            risks.append("未发现明显风险。")
+            risks.append("未发现明显风险")
 
         person_results.append({
             "person_id": idx,
