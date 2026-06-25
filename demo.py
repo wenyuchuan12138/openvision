@@ -112,7 +112,7 @@ def main():
     print("\n==========工地安全风险分析=============")
     print(f"人员数量：{risk_report['person_count']}")
     print(f"安全帽数量：{risk_report['helmet_count']}")
-    print(f"反光背心数量：{risk_report['vest_count']}")
+    print(f"反光背心数量：{risk_report['safety_vest_count']}")
 
     print("\n风险提示：")
     for msg in risk_report["risk_messages"]:
