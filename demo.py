@@ -12,6 +12,7 @@ from src.visualizer import draw_detections
 from src.report import gengerate_report
 from src.risk_analyzer import analyze_construction_safety
 from src.spatial_analyzer import analyze_person_safety_by_spatial_relation
+from src.postprocess import post_process_detections
 
 def download_test_image(save_path):
     """
@@ -80,7 +81,7 @@ def main():
 
     # 设置开放词汇检测提示词
     # 注意Grounding DINO的prompt建议用英文，并且每个类别后面加英文句号
-    text_prompt = "person. helmet. hard hat. safety vest. reflective vest. orange vest."
+    text_prompt = "person. helmet. hard hat. reflective vest."
 
     print("仓前检测提示词：", text_prompt)
 
@@ -94,6 +95,8 @@ def main():
         threshold = 0.25,
         text_threshold = 0.20
     )
+
+    detections = post_process_detections(detections)
 
     # 生成检测报告
     report = gengerate_report(
