@@ -80,7 +80,7 @@ def main():
 
     # 设置开放词汇检测提示词
     # 注意Grounding DINO的prompt建议用英文，并且每个类别后面加英文句号
-    text_prompt = "person. helmet. safety vest."
+    text_prompt = "person. helmet. hard hat. safety vest. reflective vest. orange vest."
 
     print("仓前检测提示词：", text_prompt)
 
@@ -91,8 +91,8 @@ def main():
     detections, image = detector.predict(
         image_path = image_path,
         text_prompt = text_prompt,
-        threshold = 0.30,
-        text_threshold = 0.25
+        threshold = 0.25,
+        text_threshold = 0.20
     )
 
     # 生成检测报告
