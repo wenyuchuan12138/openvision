@@ -13,11 +13,23 @@ def download_test_image(save_path):
     这张图片来自COCO数据集，图中有猫和控制器。
     """
 
-    image_url = "http://images.cocodataset.org/val2017/00000003979.jpg"
-    response = requests.get(image_url, stream = True)
+    image_url = "https://images.cocodataset.org/val2017/000000039769.jpg"
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
+    response = requests.get(image_url, headers = headers, timeout = 30)
+    response.raise_for_status()
+
+    with open(save_path, "wb") as f:
+        f.write(response.content)
+    
+    # 检测是否真的是图片
     image = Image.open(response.raw).convert("RGB")
     image.save(save_path)
+
+    print("测试图片下载成功：", save_path)
 
 def print_report(report):
     """
