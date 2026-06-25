@@ -27,6 +27,7 @@ def download_test_image(save_path):
                             timeout = 30,
                             verify = False
                         )
+    
     response.raise_for_status()
 
     with open(save_path, "wb") as f:
@@ -76,7 +77,7 @@ def main():
 
     # 设置开放词汇检测提示词
     # 注意Grounding DINO的prompt建议用英文，并且每个类别后面加英文句号
-    text_prompt = "cat.remote."
+    text_prompt = "cat"
 
     print("仓前检测提示词：", text_prompt)
 

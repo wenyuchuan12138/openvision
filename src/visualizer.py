@@ -1,5 +1,6 @@
-from PIL import ImageDraw
+# 将识别框画在图片上
 
+from PIL import ImageDraw
 
 def draw_detections(image, detections, save_path=None):
     """
@@ -21,8 +22,10 @@ def draw_detections(image, detections, save_path=None):
         label = det["label"]
         score = det["score"]
         x1, y1, x2, y2 = det["bbox"]
-
+        
+        # 根据bbox话红色矩形框
         draw.rectangle([x1, y1, x2, y2], outline="red", width=3)
+        # 在左上角写类别和置信度
         draw.text((x1, y1), f"{label}: {score}", fill="red")
 
     if save_path is not None:

@@ -1,3 +1,5 @@
+# 负责加载模型和检测
+
 import torch
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
@@ -23,6 +25,7 @@ class GroundingDINODetector:
         """
 
         if device is None:
+            # 如果有GPU就用cuda，如果没有就用cpu
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.device = device
@@ -30,8 +33,10 @@ class GroundingDINODetector:
 
         print(f"正在加载模型：{model_id}")
         print(f"当前设备：{self.device}")
-
+        
+        # 预处理器，负责把原始输入变成模型能看懂的格式
         self.processor = AutoProcessor.from_pretrained(model_id)
+        # 真正的Grounding DINO模型
         self.model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(self.device)
 
     def predict(self, image_path, text_prompt, threshold=0.30, text_threshold=0.25):
@@ -48,30 +53,41 @@ class GroundingDINODetector:
         detections：检测结果列表。
         image：原始 PIL 图片。
         """
-
+        
+        # 从image_path读取图片，转换成RGB三通道格式
         image = Image.open(image_path).convert("RGB")
-
+        
+        # 处理图片和文本，转成PyTorch张量
         inputs = self.processor(
             images=image,
             text=text_prompt,
+            # 返回PyTorch格式的数据
             return_tensors="pt"
+         # 把数据放到GPU或CPU上
         ).to(self.device)
 
+        # 模型推理
+             # 现在只是推理，不训练模型，不需要计算梯度，避免不需要计算
         with torch.no_grad():
+            # 把inputs里面的内容传给模型
             outputs = self.model(**inputs)
 
         results = self.processor.post_process_grounded_object_detection(
             outputs,
             inputs.input_ids,
+            # 检测框置信度阈值
             threshold=threshold,
+            # 文本匹配阈值，控制区域和文本提示词之间的匹配程度
             text_threshold=text_threshold,
+            # 把模型预测框还原到原图尺寸上
             target_sizes=[image.size[::-1]]
         )
 
         result = results[0]
 
         detections = []
-
+        
+        # 把目标变成字典
         for box, score, label in zip(result["boxes"], result["scores"], result["labels"]):
             detections.append({
                 "label": label,

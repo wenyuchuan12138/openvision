@@ -29,6 +29,7 @@ def gengerate_report(detections, image_size, save_path = None):
 
         box_width = max(0, x2 - x1)
         box_height = max(0, y2 - y1)
+        # 这是检测框面积不是精准物体面积
         box_area = box_width * box_height
         area_ratio = box_area / image_area if image_area > 0 else 0
 
