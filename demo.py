@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 import urllib3
 from PIL import Image
@@ -9,6 +10,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecurePlatformWarning)
 from src.detector import GroundingDINODetector
 from src.visualizer import draw_detections
 from src.report import gengerate_report
+from src.risk_analyzer import analyze_construction_safety
 
 def download_test_image(save_path):
     """
@@ -77,7 +79,7 @@ def main():
 
     # 设置开放词汇检测提示词
     # 注意Grounding DINO的prompt建议用英文，并且每个类别后面加英文句号
-    text_prompt = "cat."
+    text_prompt = "person. helmet. safety vest."
 
     print("仓前检测提示词：", text_prompt)
 
@@ -99,8 +101,24 @@ def main():
         save_path = "outputs/report.jason"
     )
 
+    risk_report = analyze_construction_safety(report)
+
+    with open("outputs/risk_report.json", "w", encoding = "utf-8") as f:
+        json.dump(risk_report, f, ensure_ascii = False, indent = 4)
+
     # 打印报告
     print_report(report)
+
+    print("\n==========工地安全风险分析=============")
+    print(f"人员数量：{risk_report['person_count']}")
+    print(f"安全帽数量：{risk_report['helmet_count']}")
+    print(f"反光背心数量：{risk_report['vest_count']}")
+
+    print("\n风险提示：")
+    for msg in risk_report["risk_messages"]:
+        print("-", msg)
+    
+    print("======================\n")
 
     # 绘制检测卡并保持结果图片
     result_image = draw_detections(
