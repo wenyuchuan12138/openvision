@@ -40,13 +40,13 @@ def gengerate_report(detections, image_size, save_path = None):
             "area_ratio": round(area_ratio, 4)
         })
 
-    report = {
-        "image_width": width,
-        "iamge_height": height,
-        "total_objects": len(detections),
-        "label_counts": dict(label_counts),
-        "objects": objects
-    }
+        report = {
+            "image_width": width,
+            "image_height": height,
+            "total_objects": len(detections),
+            "label_counts": dict(label_counts),
+            "objects": objects
+        }
 
     if save_path is not None:
         with open(save_path, "w", encoding = "utf-8") as f:
