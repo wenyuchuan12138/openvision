@@ -11,6 +11,7 @@ from src.detector import GroundingDINODetector
 from src.visualizer import draw_detections
 from src.report import gengerate_report
 from src.risk_analyzer import analyze_construction_safety
+from src.spatial_analyzer import analyze_person_safety_by_spatial_relation
 
 def download_test_image(save_path):
     """
@@ -103,16 +104,27 @@ def main():
 
     risk_report = analyze_construction_safety(report)
 
+    spatial_report = analyze_person_safety_by_spatial_relation(detections)
+
     with open("outputs/risk_report.json", "w", encoding = "utf-8") as f:
         json.dump(risk_report, f, ensure_ascii = False, indent = 4)
+
+    with open("outputs/spatial_report.json", "w", encoding = "utf-8") as f:
+        json.dump(spatial_report, f, ensure_ascii = False, indent = 4)
 
     # 打印报告
     print_report(report)
 
-    print("\n==========工地安全风险分析=============")
-    print(f"人员数量：{risk_report['person_count']}")
-    print(f"安全帽数量：{risk_report['helmet_count']}")
-    print(f"反光背心数量：{risk_report['safety_vest_count']}")
+    print("\n==========逐人安全风险分析=============")
+    print(f"检测到人员数量：{spatial_report['total_persons']}")
+
+    for person in spatial_report["person_results"]:
+        print(f"\n人员{person['person_id']}:")
+        print(f"-是否佩戴安全帽: {person['has_helmet']}")
+        print(f"-是否穿反光背心: {person['has_safety_vest']}")
+        print(f"-风险提示: {','.join(person['risks'])}")
+    
+    print("=====================\n")
 
     print("\n风险提示：")
     for msg in risk_report["risk_messages"]:
