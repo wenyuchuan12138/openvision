@@ -81,7 +81,7 @@ def main():
 
     # 设置开放词汇检测提示词
     # 注意Grounding DINO的prompt建议用英文，并且每个类别后面加英文句号
-    text_prompt = "person. helmet. hard hat. reflective vest."
+    text_prompt = "person. hard hat. orange safety vest. high visibility vest."
 
     print("仓前检测提示词：", text_prompt)
 
