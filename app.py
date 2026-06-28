@@ -59,7 +59,7 @@ def openvision_predict(image, text_prompt, threshold, text_threshold):
 demo = gr.Interface(
     fn = openvision_predict,
     inputs = [
-        gr.image(type = "pil", label = "上传图片"),
+        gr.Image(type = "pil", label = "上传图片"),
         gr.Textbox(
             label = "检测提示词",
             value = "person. helmet. hard hat",
@@ -81,7 +81,7 @@ demo = gr.Interface(
         ),
     ],
     outputs = [
-        gr.image(type = "pil", label = "检测结果图"),
+        gr.Image(type = "pil", label = "检测结果图"),
         gr.Textbox(label = "检测报告 JSON")
     ],
     title = "OpenVision 开放词汇目标检测系统",
