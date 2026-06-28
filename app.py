@@ -38,7 +38,7 @@ def openvision_predict(image, text_prompt, threshold, text_threshold):
         text_threshold = text_threshold
     )
 
-    detections = post_process_detections(detections)
+    # detections = post_process_detections(detections)
 
     report = gengerate_report(
         detections = detections,
@@ -85,7 +85,7 @@ demo = gr.Interface(
         gr.Textbox(label = "检测报告 JSON")
     ],
     title = "OpenVision 开放词汇目标检测系统",
-    description = "基于Grounding DINO的文本提示驱动目标检测系统。山川图片并输入检测词，即可输出检测框、类别、置信度和统计报告。"   
+    description = "基于Grounding DINO的文本提示驱动目标检测系统。上传图片并输入检测词，即可输出检测框、类别、置信度和统计报告。"   
 )
 
 if __name__ == "__main__":
