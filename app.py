@@ -1,6 +1,6 @@
 import os
 import json
-import gardio as gr
+import gradio as gr
 from PIL import Image
 
 from src.detector import GroundingDINODetector
@@ -71,7 +71,7 @@ demo = gr.Interface(
             value = 0.25,
             step = 0.05,
             label = "检测框阈值 threshold"
-        )，
+        ),
         gr.Slider(
             minimum = 0.1,
             maximum = 0.9,
