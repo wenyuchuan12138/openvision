@@ -11,7 +11,7 @@ from src.postprocess import post_process_detections
 # 全局加载模型，避免每次都惦记按钮重新加载
 detecor = GroundingDINODetector()
 
-def openvision_predict(image, text_prompt, threshold, text_threshold):
+def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     """
     Gradio界面调用的预测函数
 
@@ -47,7 +47,8 @@ def openvision_predict(image, text_prompt, threshold, text_threshold):
         text_threshold = text_threshold
     )
 
-    # detections = post_process_detections(detections)
+    if mode == "工地安全检测":
+        detections = post_process_detections(detections)
 
     report = gengerate_report(
         detections = detections,
@@ -79,9 +80,10 @@ demo = gr.Interface(
     fn = openvision_predict,
     # Gradio输入部分
     inputs = [
+        # 这里的输入要和line14一一对应，有顺序
         gr.Image(
             type = "pil", # 返回PIL Image对象
-             label = "上传图片"
+            label = "上传图片"
         ),
         gr.Textbox(
             label = "检测提示词",
@@ -102,6 +104,11 @@ demo = gr.Interface(
             step = 0.05,
             label = "文本匹配阈值 text_threshold"
         ),
+        gr.Dropdown(
+            choices = ["通用检测", "工地安全检测"],
+            value = "通用检测",
+            label = "检测模式"
+        )
     ],
     # Gradio输出部分
     outputs = [
