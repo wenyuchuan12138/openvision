@@ -7,23 +7,19 @@ from src.detector import GroundingDINODetector
 from src.visualizer import draw_detections
 from src.report import gengerate_report
 from src.postprocess import post_process_detections
+from src.robust_detector import run_prompt_ensemble
 
 # 全局加载模型，避免每次都惦记按钮重新加载
-detecor = GroundingDINODetector()
+detector = GroundingDINODetector()
 
 def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     """
     Gradio界面调用的预测函数
 
-    输入：
-    image:用户上传的图片
-    text_prompt:用户输入的检测词
-    threshold:检测框置信度阈值
-    text_threshold:文本匹配阈值
-    
-    输出：
-    result_image:画好检测框的图片
-    report_text:检测报告文本
+    mode:
+    1.通用监测:直接使用用户输入prompt
+    2.工地安全监测:使用用户输入prompt,并开启工地后处理
+    3.工地鲁棒监测:使用多组prompt ensemble,提高检测稳定性
     """
 
     # os.makedirs()可创建单个多层目录
@@ -40,15 +36,42 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     # 保存文本 open("input_image.txt", "w").write("text")
     # 保存JSON json.dump(data, open("input_path.json", "w"))
 
-    detections, pil_image = detecor.predict(
-        image_path = image_path,
-        text_prompt = text_prompt,
-        threshold = threshold,
-        text_threshold = text_threshold
-    )
+    if mode == "通用检测":
+        detections, pil_image = detector.predict(
+            image_path = image_path,
+            text_prompt = text_prompt,
+            threshold = threshold,
+            text_threshold = text_threshold
+        )
+    
+    elif mode == "工地安全检测":
+        detections, pil_image = detector.predict(
+            iamge_path = image_path,
+            text_prompt = text_prompt,
+            threshold = threshold,
+            text_threshold = text_threshold
+        )
 
-    if mode == "工地安全检测":
         detections = post_process_detections(detections)
+
+    elif mode == "工地鲁棒检测":
+        prompt_list = [
+            "person. worker. construction woker.",
+            "helmet. gard hat. safety helmet.",
+            "safety vest. reflective vest. orange vest. high visibility vest."
+        ]
+
+        detections, pil_image = run_prompt_ensemble(
+            detector = detector,
+            image_path = image_path,
+            prompt_list = prompt_list,
+            threshold = threshold,
+            text_threshold = text_threshold,
+            ues_construction_postprocess = True
+        )
+
+    else:
+        raise ValueError(f"位置检测模式:{mode}")
 
     report = gengerate_report(
         detections = detections,
@@ -56,14 +79,21 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
         save_path = "outputs/report.json"
     )
 
+    report["mode"] = mode
+    report["prompt"] = text_prompt
+
+    if mode == "工地鲁棒检测":
+        report["prompt_list"] = [
+            "person. worker. construction worker.",
+            "helmet. hard hat. safety helmet.",
+            "safety vest. reflective vest. orange vest. high visibility vest."
+        ]
+
     result_image = draw_detections(
         image = pil_image,
         detections = detections,
         save_path = "outputs/detection_result.jpg"
     )
-
-    report["mode"] = mode
-    report["prompt"] = text_prompt
 
     # 把python对象转换成JSON，而json.dump()则是直接保存文件
     report_text = json.dumps(report, ensure_ascii = False, indent = 4)
@@ -90,8 +120,8 @@ demo = gr.Interface(
         ),
         gr.Textbox(
             label = "检测提示词",
-            value = "person. helmet. hard hat", # 默认值
-            placeholder = "例如：person. heimet. car." # 提示文字
+            value = "person. helmet. hard hat. reflective vest.", # 默认值
+            placeholder = "通用检测:cat. dog. car.;工地检测:person. helmet. hard hat." # 提示文字
         ),
         gr.Slider(
             minimum = 0.1,
@@ -108,7 +138,7 @@ demo = gr.Interface(
             label = "文本匹配阈值 text_threshold"
         ),
         gr.Dropdown(
-            choices = ["通用检测", "工地安全检测"],
+            choices = ["通用检测", "工地安全检测", "工地鲁棒检测"],
             value = "通用检测",
             label = "检测模式"
         )
