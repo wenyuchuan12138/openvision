@@ -120,9 +120,9 @@ class GroundingDINODetector:
             # label = "cat"
     
             # detection = {
-            #       "label": "cat",                              # 标签
-            #       "score": round(0.9523, 4),                  # 0.9523
-            #       "bbox": [round(x, 2) for x in [50.5, 30.2, 200.3, 150.8]]  # [50.5, 30.2, 200.3, 150.8]
+            #       "label": "cat",      # 标签
+            #       "score": round(0.9523, 4),        # 0.9523
+            #       "bbox": [round(x, 2) for x in [50.5, 30.2, 200.3, 150.8]]         # [50.5, 30.2, 200.3, 150.8]
             # }
                                                     
             # {

@@ -5,6 +5,7 @@ def normalize_label(label):
     """
     同意标签名称
     """
+    # .strip(chars = None)移除字符串首尾的空白字符（空格、制表符、换行符等），可指定chars字符
     label = label.lower().strip()
 
     if "person" in label:
@@ -50,15 +51,25 @@ def nms_by_label(detections, iou_threshold = 0.5):
     """
     final_detections = []
 
+    # 获取唯一标签
+    # set()存储唯一元素，det()是取出字典中的每一行数据
     labels = set(det["label"] for det in detections)
 
     for label in labels:
+        # 对循环中的一个标签找到其所有结果
         same_label_dets = [det for det in detections if det["label"] == label]
+        # 按置信度排序
         same_label_dets = sorted(same_label_dets, key = lambda x: x["score"], reverse = True)
+        # sorted(
+        # iterable,          # 必需：要排序的列表
+        # key=None,         # 可选：排序的键函数，lambda是快速定义简单函数，用什么来做键函数
+        # reverse=False     # 可选：是否反向排序，True由大到小
+        # )
 
         kept = []
 
         while same_label_dets:
+            # .pop()移除并返回列表中第一个元素
             best = same_label_dets.pop(0)
             kept.append(best)
 
@@ -91,20 +102,26 @@ def post_process_detections(detections):
     for det in detections:
         new_label = normalize_label(det["label"])
 
+        # 如果无法识别，跳过这个检测
         if new_label is None:
             continue
-
+        
+        # .get()获取指定键的值，不存在则返回0.3
+        # 获取置信度阈值
         min_score = score_thresholds.get(new_label, 0.30)
 
+        # 过滤低置信度，分数太低就跳过
         if det["score"] < min_score:
             continue
-
+        
+        # 保留符合条件的检测
         processed.append({
             "label": new_label,
             "score": det["score"],
             "bbox": det["bbox"]
         })
 
+    # 删除与高置信度框重合的框
     processed = nms_by_label(processed, iou_threshold = 0.5)
 
     return processed

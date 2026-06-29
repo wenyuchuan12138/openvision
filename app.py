@@ -26,10 +26,19 @@ def openvision_predict(image, text_prompt, threshold, text_threshold):
     report_text:检测报告文本
     """
 
+    # os.makedirs()可创建单个多层目录
     os.makedirs("outputs", exist_ok = True)
+    # os.makedirs(
+    #     name,                    # 必需：目录路径
+    #     mode=0o777,             # 可选：目录权限（默认）
+    #     exist_ok=False          # 可选：目录存在时报错，True是不报错
+    # )
 
     image_path = "outputs/input_image.jpg"
+    # 保存图片
     image.save(image_path)
+    # 保存文本 open("input_image.txt", "w").write("text")
+    # 保存JSON json.dump(data, open("input_path.json", "w"))
 
     detections, pil_image = detecor.predict(
         image_path = image_path,
@@ -52,24 +61,37 @@ def openvision_predict(image, text_prompt, threshold, text_threshold):
         save_path = "outputs/detection_result.jpg"
     )
 
+    # 把python对象转换成JSON，而json.dump()则是直接保存文件
     report_text = json.dumps(report, ensure_ascii = False, indent = 4)
+    # json.dumps(
+    #      obj,                    # 必需：要转换的 Python 对象
+    #      ensure_ascii=False,     # 可选：是否只用 ASCII 字符，False是保留中文
+    #      indent=4,               # 可选：缩进空格数（用于格式化）
+    #      sort_keys=False,        # 可选：是否按键排序
+    #      default=None            # 可选：处理不可序列化的对象
+    # )
 
     return result_image, report_text
 
+# gr.Interface()快速创建一个Web界面进行交互
 demo = gr.Interface(
+    # 要调用的函数,用户点击提交时被调用，参数数量=input数量，返回值数量= outputs数量
     fn = openvision_predict,
     # Gradio输入部分
     inputs = [
-        gr.Image(type = "pil", label = "上传图片"),
+        gr.Image(
+            type = "pil", # 返回PIL Image对象
+             label = "上传图片"
+        ),
         gr.Textbox(
             label = "检测提示词",
-            value = "person. helmet. hard hat",
-            placeholder = "例如：person. heimet. car."
+            value = "person. helmet. hard hat", # 默认值
+            placeholder = "例如：person. heimet. car." # 提示文字
         ),
         gr.Slider(
             minimum = 0.1,
             maximum = 0.9,
-            value = 0.25,
+            value = 0.25, # 默认值
             step = 0.05,
             label = "检测框阈值 threshold"
         ),
@@ -87,8 +109,16 @@ demo = gr.Interface(
         gr.Textbox(label = "检测报告 JSON")
     ],
     title = "OpenVision 开放词汇目标检测系统",
-    description = "基于Grounding DINO的文本提示驱动目标检测系统。上传图片并输入检测词，即可输出检测框、类别、置信度和统计报告。"   
+    description = "基于Grounding DINO的文本提示驱动目标检测系统。上传图片并输入检测词,即可输出检测框、类别、置信度和统计报告。"   
 )
 
 if __name__ == "__main__":
     demo.launch(share = True)
+    # 方式1：本地访问
+    # demo.launch()
+    # 访问：http://localhost:7860
+    # 方式2：共享链接（可以分享给他人）
+    # demo.launch(share=True)
+    # 会生成一个临时的公网链接
+    # 方式3：指定端口
+    # demo.launch(server_name="0.0.0.0", server_port=8000)
