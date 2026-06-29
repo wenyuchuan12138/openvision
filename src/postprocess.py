@@ -1,3 +1,6 @@
+# 对检测结果做清洗
+
+# 把不同叫法统一成一个类别
 def normalize_label(label):
     """
     同意标签名称
@@ -39,6 +42,8 @@ def calculate_iou(box1, box2):
     
     return inter_area/union_area
 
+
+# NMS去重是同一个目标如果被框好几次，只保留置信度最高的框；iou是两个框的重叠程度，重叠程度不高可保留
 def nms_by_label(detections, iou_threshold = 0.5):
     """
     对于同一类别重复框左NMS去重
@@ -76,6 +81,7 @@ def post_process_detections(detections):
 
     processed = []
 
+    # person分数低于0.35就不要，减少误检
     score_thresholds = {
         "person": 0.35,
         "helmet": 0.30,

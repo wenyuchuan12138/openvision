@@ -1,4 +1,4 @@
-# 负责加载模型和检测
+# 调用Grounding DINO检测目标和检测
 
 import torch
 from PIL import Image
@@ -15,7 +15,8 @@ class GroundingDINODetector:
     3. 输出检测框、标签和置信度。
     """
 
-    def __init__(self, model_id="IDEA-Research/grounding-dino-tiny", device=None):
+    # __init__()初始化模型
+    def __init__(self, model_id = "IDEA-Research/grounding-dino-tiny", device = None):
         """
         初始化模型。
 
@@ -34,12 +35,13 @@ class GroundingDINODetector:
         print(f"正在加载模型：{model_id}")
         print(f"当前设备：{self.device}")
         
-        # 预处理器，负责把原始输入变成模型能看懂的格式
+        # 预处理器，负责把图片和文字变成模型能看懂的格式
         self.processor = AutoProcessor.from_pretrained(model_id)
-        # 真正的Grounding DINO模型
+        # 真正的Grounding DINO模型，根据图片和文本提示词，找出图片中和文本相关的目标位置
         self.model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(self.device)
 
-    def predict(self, image_path, text_prompt, threshold=0.30, text_threshold=0.25):
+    # predict接收图片路径，你想检测的内容，检测框置信度阈值，文本匹配阈值
+    def predict(self, image_path, text_prompt, threshold = 0.30, text_threshold = 0.25):
         """
         对单张图片进行开放词汇目标检测。
 
@@ -59,8 +61,8 @@ class GroundingDINODetector:
         
         # 处理图片和文本，转成PyTorch张量
         inputs = self.processor(
-            images=image,
-            text=text_prompt,
+            images = image,
+            text = text_prompt,
             # 返回PyTorch格式的数据
             return_tensors="pt"
          # 把数据放到GPU或CPU上
@@ -71,16 +73,17 @@ class GroundingDINODetector:
         with torch.no_grad():
             # 把inputs里面的内容传给模型
             outputs = self.model(**inputs)
-
+        
+        # 将模型输出经此函数转换成boxes检测框，scores置信度，lables类别
         results = self.processor.post_process_grounded_object_detection(
             outputs,
             inputs.input_ids,
-            # 检测框置信度阈值
-            threshold=threshold,
-            # 文本匹配阈值，控制区域和文本提示词之间的匹配程度
-            text_threshold=text_threshold,
+            # 检测框置信度阈值，控制检测框是否保留，太低会导致检测出很多
+            threshold = threshold,
+            # 文本匹配阈值，控制区域和文本提示词之间的匹配程度，太低会导致误检太多
+            text_threshold = text_threshold,
             # 把模型预测框还原到原图尺寸上
-            target_sizes=[image.size[::-1]]
+            target_sizes = [image.size[::-1]]
         )
 
         result = results[0]

@@ -58,6 +58,7 @@ def openvision_predict(image, text_prompt, threshold, text_threshold):
 
 demo = gr.Interface(
     fn = openvision_predict,
+    # Gradio输入部分
     inputs = [
         gr.Image(type = "pil", label = "上传图片"),
         gr.Textbox(
@@ -80,6 +81,7 @@ demo = gr.Interface(
             label = "文本匹配阈值 text_threshold"
         ),
     ],
+    # Gradio输出部分
     outputs = [
         gr.Image(type = "pil", label = "检测结果图"),
         gr.Textbox(label = "检测报告 JSON")

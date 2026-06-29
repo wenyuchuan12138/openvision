@@ -1,3 +1,5 @@
+# 工地安全风险判断专用，根据report生成的数量级风险判断
+
 def analyze_construction_safety(report):
     """
     根据检测报告进行工地安全风险分析。

@@ -2,6 +2,7 @@
 
 from PIL import ImageDraw
 
+                  # 接收原图， 检测结果， 保存路径
 def draw_detections(image, detections, save_path=None):
     """
     在图片上绘制检测框。
@@ -23,10 +24,10 @@ def draw_detections(image, detections, save_path=None):
         score = det["score"]
         x1, y1, x2, y2 = det["bbox"]
         
-        # 根据bbox话红色矩形框
-        draw.rectangle([x1, y1, x2, y2], outline="red", width=3)
+        # 根据bbox画红色矩形框
+        draw.rectangle([x1, y1, x2, y2], outline = "red", width = 3)
         # 在左上角写类别和置信度
-        draw.text((x1, y1), f"{label}: {score}", fill="red")
+        draw.text((x1, y1), f"{label}: {score}", fill = "green")
 
     if save_path is not None:
         draw_image.save(save_path)

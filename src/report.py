@@ -11,6 +11,7 @@ def gengerate_report(detections, image_size, save_path = None):
     width, height = image_size
     image_area = width * height
 
+    # 输出统计类别及其数量
     labels = [det["label"] for det in detections]
     label_counts = Counter(labels)
 
@@ -19,10 +20,12 @@ def gengerate_report(detections, image_size, save_path = None):
     for det in detections:
         x1, y1, x2, y2 = det["bbox"]
 
+        # 计算框面积
         box_width = max(0, x2 - x1)
         box_height = max(0, y2 - y1)
         # 这是检测框面积不是精准物体面积
         box_area = box_width * box_height
+        # 计算面积占比
         area_ratio = box_area / image_area if image_area > 0 else 0
 
         objects.append({
@@ -42,7 +45,9 @@ def gengerate_report(detections, image_size, save_path = None):
     }
 
     if save_path is not None:
+        # 把python字典保存为JSON文件
         with open(save_path, "w", encoding = "utf-8") as f:
+                                # ensure_ascii = False保证中文不会变成乱码，indent = 4保证JSON文件格式更好看
             json.dump(report, f, ensure_ascii = False, indent = 4)
 
     return report
