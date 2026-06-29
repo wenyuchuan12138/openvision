@@ -13,11 +13,12 @@ from src.report import gengerate_report
 from src.risk_analyzer import analyze_construction_safety
 from src.spatial_analyzer import analyze_person_safety_by_spatial_relation
 from src.postprocess import post_process_detections
+from src.robust_detector import run_prompt_ensemble
 
 def download_test_image(save_path):
     """
     下载一张测试图片。
-    这张图片来自COCO数据集，图中有猫和控制器。
+    这张图片来自COCO数据集,图中有猫和控制器。
     """
 
     image_url = "https://images.cocodataset.org/val2017/000000039769.jpg"
@@ -88,12 +89,20 @@ def main():
     # 加载Grounding DINO检测器
     detector = GroundingDINODetector()
 
+    prompt_list = [
+        "person. worker. construction woker.",
+        "helmet. hard hat. safety helmet",
+        "safety vest. reflective vest. orange vest. high visibility vest."
+    ]
+
     # 执行检测
-    detections, image = detector.predict(
+    detections, image = run_prompt_ensemble(
+        detector = detector,
         image_path = image_path,
-        text_prompt = text_prompt,
+        prompt_list = prompt_list,
         threshold = 0.25,
-        text_threshold = 0.20
+        text_threshold = 0.20,
+        ues_construction_postprocess = True
     )
 
     detections = post_process_detections(detections)

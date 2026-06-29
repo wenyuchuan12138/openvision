@@ -3,18 +3,18 @@
 # 把不同叫法统一成一个类别
 def normalize_label(label):
     """
-    同意标签名称
+    同意标签名称。
     """
     # .strip(chars = None)移除字符串首尾的空白字符（空格、制表符、换行符等），可指定chars字符
     label = label.lower().strip()
 
-    if "person" in label:
+    if "person" in label or "worker" in label or "man" in label:
         return "person"
     
-    if "helmet" in label or "hard hat" in label:
+    if "helmet" in label or "hard hat" in label or "safety helmet" in label:
         return "helmet"
     
-    if "vest" in label or "visibility" in label or "safety" in label:
+    if "vest" in label or "visibility" in label or "safety" in label or "reflective" in label or "high visibility" in label or "orange vest" in label:
         return "safety vest"
     
     return None
