@@ -8,6 +8,7 @@ from src.visualizer import draw_detections
 from src.report import gengerate_report
 from src.postprocess import post_process_detections
 from src.robust_detector import run_prompt_ensemble
+from src.summary_report import build_summary_report
 
 # 全局加载模型，避免每次都惦记按钮重新加载
 detector = GroundingDINODetector()
@@ -96,16 +97,22 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     )
 
     # 把python对象转换成JSON，而json.dump()则是直接保存文件
-    report_text = json.dumps(report, ensure_ascii = False, indent = 4)
+    # report_text = json.dumps(report, ensure_ascii = False, indent = 4)
     # json.dumps(
-    #      obj,                    # 必需：要转换的 Python 对象
+    #      obj,        ``            # 必需：要转换的 Python 对象
     #      ensure_ascii=False,     # 可选：是否只用 ASCII 字符，False是保留中文
     #      indent=4,               # 可选：缩进空格数（用于格式化）
     #      sort_keys=False,        # 可选：是否按键排序
     #      default=None            # 可选：处理不可序列化的对象
     # )
 
-    return result_image, report_text
+    summary_text = build_summary_report(
+        report = report,
+        mode = mode,
+        prompt = text_prompt
+    )
+
+    return result_image, summary_text
 
 # gr.Interface()快速创建一个Web界面进行交互
 demo = gr.Interface(
@@ -146,9 +153,8 @@ demo = gr.Interface(
     # Gradio输出部分
     outputs = [
         gr.Image(type = "pil", label = "检测结果图"),
-        gr.Code(
-        label="检测报告 JSON",
-        language="json",
+        gr.Textbox(
+        label="检测结果摘要",
         lines=20
     )
     ],
