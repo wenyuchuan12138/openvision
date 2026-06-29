@@ -116,7 +116,11 @@ demo = gr.Interface(
     # Gradio输出部分
     outputs = [
         gr.Image(type = "pil", label = "检测结果图"),
-        gr.Textbox(label = "检测报告 JSON")
+        gr.Code(
+        label="检测报告 JSON",
+        language="json",
+        lines=20
+    )
     ],
     title = "OpenVision 开放词汇目标检测系统",
     description = "基于Grounding DINO的文本提示驱动目标检测系统。上传图片并输入检测词,即可输出检测框、类别、置信度和统计报告。"   
