@@ -62,6 +62,9 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
         save_path = "outputs/detection_result.jpg"
     )
 
+    report["mode"] = mode
+    report["prompt"] = text_prompt
+
     # 把python对象转换成JSON，而json.dump()则是直接保存文件
     report_text = json.dumps(report, ensure_ascii = False, indent = 4)
     # json.dumps(
