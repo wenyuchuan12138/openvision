@@ -38,7 +38,7 @@ def get_body_region(person_box):
     height = y2 - y1
 
     body_y1 = y1 + height * 0.30
-    body_y2 = y2 + height * 0.85
+    body_y2 = y1 + height * 0.85
 
     return [x1, body_y1, x2, body_y2]
 
@@ -72,7 +72,7 @@ def analyze_person_safety_by_spatial_relation(detections):
                 break
 
         for vest in vests:
-            vest_center = box_center(helmet["bbox"])
+            vest_center = box_center(vest["bbox"])
             if is_center_inside_box(vest_center, body_region):
                 has_vest = True
                 break

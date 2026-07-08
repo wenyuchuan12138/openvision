@@ -47,7 +47,7 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     
     elif mode == "工地安全检测":
         detections, pil_image = detector.predict(
-            iamge_path = image_path,
+            image_path = image_path,
             text_prompt = text_prompt,
             threshold = threshold,
             text_threshold = text_threshold

@@ -111,7 +111,7 @@ def main():
     report = gengerate_report(
         detections = detections,
         image_size = image.size,
-        save_path = "outputs/report.jason"
+        save_path = "outputs/report.json"
     )
 
     risk_report = analyze_construction_safety(report)
