@@ -134,14 +134,14 @@ demo = gr.Interface(
             minimum = 0.1,
             maximum = 0.9,
             value = 0.25, # 默认值
-            step = 0.05,
+            step = 0.01,
             label = "检测框阈值 threshold"
         ),
         gr.Slider(
             minimum = 0.1,
             maximum = 0.9,
             value = 0.20,
-            step = 0.05,
+            step = 0.01,
             label = "文本匹配阈值 text_threshold"
         ),
         gr.Dropdown(
