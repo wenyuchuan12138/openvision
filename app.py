@@ -6,7 +6,6 @@ from PIL import Image
 from src.detector import GroundingDINODetector
 from src.visualizer import draw_detections
 from src.report import generate_report
-from src.postprocess import post_process_detections
 from src.robust_detector import run_prompt_ensemble
 from src.summary_report import build_summary_report
 from src.spatial_analyzer import analyze_person_safety_by_spatial_relation

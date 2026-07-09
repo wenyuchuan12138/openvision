@@ -5,8 +5,8 @@ def normalize_label(label):
     """
     同意标签名称。
     """
-    # .strip(chars = None)移除字符串首尾的空白字符（空格、制表符、换行符等），可指定chars字符
-    label = label.lower().strip()
+    # 将标签强制转换为字符串，避免模型返回非字符串类型导致报错
+    label = str(label).lower().strip()
 
     if "person" in label or "worker" in label or "man" in label:
         return "person"

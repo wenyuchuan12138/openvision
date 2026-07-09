@@ -8,7 +8,7 @@ def run_prompt_ensemble(
         threshold = 0.25,
         text_threshold = 0.20,
         # 决定是否启用工地专用后处理，False直接返回原始检测结果
-        ues_construction_postprocess = True
+        use_construction_postprocess = True
 ):
     """
     多prompt检查增强
@@ -19,7 +19,7 @@ def run_prompt_ensemble(
     prompt_list: 多个prompt组成的列表
     threshold: 检测框置信度阈值
     text_threshold: 文本匹配阈值
-    ues_construction_postprocess: 是否启用工地场景后处理
+    use_construction_postprocess: 是否启用工地场景后处理
 
     返回：
     final_detections: 融合后的检测结果
@@ -45,7 +45,7 @@ def run_prompt_ensemble(
         all_detections.extend(detections)
 
     # 如果是工地安全检测模式，对结果做后处理
-    if ues_construction_postprocess:
+    if use_construction_postprocess:
         final_detections = post_process_detections(all_detections)
     else:
         final_detections = all_detections
