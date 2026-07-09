@@ -23,11 +23,11 @@ def build_summary_report(report, mode, prompt, spatial_report):
         lines.append("=========工地安全风险判断===========")
         lines.append(f"检测到人员: {spatial_report['total_persons']}人")
         lines.append(f"检测到安全帽总数: {spatial_report['detected_helmet_count']}个")
-        lines.append(f"判定为已佩戴安全帽: {spatial_report['worn_helemt_count']}人")
+        lines.append(f"判定为已佩戴安全帽: {spatial_report['worn_helmet_count']}人")
         lines.append(f"未与人员匹配的安全帽: {spatial_report['unmatched_helmet_count']}个")
         lines.append(f"检测到反光背心总数: {spatial_report['detected_vest_count']}件")
         lines.append(f"判定为已穿反光背心: {spatial_report['worn_vest_count']}人")
-        lines.append(f"未与人员匹配的反光背心: {spatial_report['unamtched_vest_count']}件")
+        lines.append(f"未与人员匹配的反光背心: {spatial_report['unmatched_vest_count']}件")
         lines.append("")
         lines.append("风险提示:")
 

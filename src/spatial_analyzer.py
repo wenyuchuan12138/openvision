@@ -87,8 +87,8 @@ def analyze_person_safety_by_spatial_relation(detections):
             if vest_index in used_vest_indices:
                 continue
 
-            if is_center_inside_box(box_center(vest["boox"]), body_region):
-                matched_helmet_index = vest_index
+            if is_center_inside_box(box_center(vest["bbox"]), body_region):
+                matched_vest_index = vest_index
                 used_vest_indices.add(vest_index)
                 break
 
