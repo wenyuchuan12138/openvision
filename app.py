@@ -24,7 +24,7 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     3.工地鲁棒监测:使用多组prompt ensemble,提高检测稳定性
     """
     if image is None:
-        raise ValueError("请先上传图片。")
+        raise gr.Error("请先上传图片。")
 
     # os.makedirs()可创建单个多层目录
     os.makedirs("outputs", exist_ok = True)
@@ -40,51 +40,52 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     # 保存文本 open("input_image.txt", "w").write("text")
     # 保存JSON json.dump(data, open("input_path.json", "w"))
 
-    if mode == "通用检测":
-        detections, pil_image = detector.predict(
-            image_path = image_path,
-            text_prompt = text_prompt,
-            threshold = threshold,
-            text_threshold = text_threshold
-        )
+    try:
+        if mode == "通用检测":
+            detections, pil_image = detector.predict(
+                image_path = image_path,
+                text_prompt = text_prompt,
+                threshold = threshold,
+                text_threshold = text_threshold
+            )
     
-    elif mode == "工地安全检测":
-        prompt_list = [
-            "person. worker. construction worker."
-            "helmet. hard hat. safety helmet."
-            "safety vest. reflective vest. high visibility vest."
-        ]
-        detections, pil_image = run_prompt_ensemble(
-            detector = detector,
-            image_path = image_path,
-            prompt_list = prompt_list,
-            threshold = threshold,
-            text_threshold = text_threshold,
-            use_construction_postprocess = True
+        elif mode == "工地安全检测":
+            prompt_list = [
+                "person. worker. construction worker."
+                "helmet. hard hat. safety helmet."
+                "safety vest. reflective vest. high visibility vest."
+            ]
+            detections, pil_image = run_prompt_ensemble(
+                detector = detector,
+                image_path = image_path,
+                prompt_list = prompt_list,
+                threshold = threshold,
+                text_threshold = text_threshold,
+                use_construction_postprocess = True
+            )
+        else:
+            raise ValueError(f"位置检测模式:{mode}")
+
+
+        report = generate_report(
+            detections = detections,
+            image_size = pil_image.size,
+            save_path = "outputs/report.json"
         )
-    else:
-        raise ValueError(f"位置检测模式:{mode}")
 
+        report["mode"] = mode
+        report["prompt"] = text_prompt
 
-    report = generate_report(
-        detections = detections,
-        image_size = pil_image.size,
-        save_path = "outputs/report.json"
-    )
+        spatial_report = None
 
-    report["mode"] = mode
-    report["prompt"] = text_prompt
+        if mode == "工地安全检测":
+            spatial_report = analyze_person_safety_by_spatial_relation(detections)
 
-    spatial_report = None
-
-    if mode == "工地安全检测":
-        spatial_report = analyze_person_safety_by_spatial_relation(detections)
-
-    result_image = draw_detections(
-        image = pil_image,
-        detections = detections,
-        save_path = "outputs/detection_result.jpg"
-    )
+        result_image = draw_detections(
+            image = pil_image,
+            detections = detections,
+            save_path = "outputs/detection_result.jpg"
+        )
 
     # 把python对象转换成JSON，而json.dump()则是直接保存文件
     # report_text = json.dumps(report, ensure_ascii = False, indent = 4)
@@ -96,14 +97,24 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     #      default=None            # 可选：处理不可序列化的对象
     # )
 
-    summary_text = build_summary_report(
-        report = report,
-        spatial_report = spatial_report,
-        mode = mode,
-        prompt = text_prompt
-    )
+        summary_text = build_summary_report(
+            report = report,
+            spatial_report = spatial_report,
+            mode = mode,
+            prompt = text_prompt
+        )
 
-    return result_image, summary_text
+        return result_image, summary_text
+    
+    except Exception as error:
+        error_message = (
+            "运行失败\n\n"
+            f"错误类型: {type(error).__name__}\n"
+            f"错误信息: {error}"
+        )
+
+        print(error_message)
+        raise gr.Error(error_message)
 
 # gr.Interface()快速创建一个Web界面进行交互
 demo = gr.Interface(

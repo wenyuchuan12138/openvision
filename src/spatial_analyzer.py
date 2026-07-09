@@ -114,7 +114,7 @@ def analyze_person_safety_by_spatial_relation(detections):
             "risks": risks
         })
 
-    spatial_report = {
+    return {
         "total_persons": len(persons),
 
         "detected_helmet_count": len(helmets),
@@ -133,5 +133,3 @@ def analyze_person_safety_by_spatial_relation(detections):
         ),
         "person_results": person_results
     }
-
-    return spatial_report
