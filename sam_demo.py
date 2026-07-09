@@ -40,7 +40,7 @@ def main():
         image = image,
         segmentation_results = segmentation_results,
         alpha = 0.45,
-        save_path = "outputs/sgementation_result.jpg"
+        save_path = "outputs/segmentation_result.jpg"
     )
 
     mask_report = generate_mask_report(

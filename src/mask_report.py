@@ -22,11 +22,11 @@ def generate_mask_report(
 
         objects.append({
             "label": result["label"],
-            "detection_score": result["detection_Score"],
-            "segmentation_score": result["segmentation_Score"],
+            "detection_score": result["detection_score"],
+            "segmentation_score": result["segmentation_score"],
             "bbox": result["bbox"],
             "mask_area": mask_area,
-            "mask_area_ration": round(area_ratio, 4)
+            "mask_area_ratio": round(area_ratio, 4)
         })
 
     return {

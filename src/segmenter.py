@@ -58,7 +58,7 @@ class SAMSegmenter:
             return []
         
         boxes = [
-            detections["bbox"]
+            detection["bbox"]
             for detection in detections
         ]
 
@@ -78,7 +78,7 @@ class SAMSegmenter:
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        masks = self.processor.image_processor.post_process_msaks(
+        masks = self.processor.image_processor.post_process_masks(
             outputs.pred_masks.cpu(),
             inputs["original_sizes"].cpu(),
             inputs["reshaped_input_sizes"].cpu()
@@ -100,7 +100,7 @@ class SAMSegmenter:
             mask_array = best_mask.numpy().astype(bool)
 
             segmentation_results.append({
-                "label": detections["label"],
+                "label": detection["label"],
                 "detection_score": detection["score"],
                 "segmentation_score": round(best_score, 4),
                 "bbox": detection["bbox"],
