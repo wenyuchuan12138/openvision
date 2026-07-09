@@ -17,7 +17,7 @@ class GroundingDINODetector:
     """
 
     # __init__()初始化模型
-    def __init__(self, model_id = "IDEA-Research/grounding-dino-tiny", device = None):
+    def __init__(self, model_id = "IDEA-Research/grounding-dino-base", device = None):
         """
         初始化模型。
 

@@ -5,10 +5,11 @@ from PIL import Image
 
 from src.detector import GroundingDINODetector
 from src.visualizer import draw_detections
-from src.report import gengerate_report
+from src.report import generate_report
 from src.postprocess import post_process_detections
 from src.robust_detector import run_prompt_ensemble
 from src.summary_report import build_summary_report
+from src.spatial_analyzer import analyze_person_safety_by_spatial_relation
 
 # 全局加载模型，避免每次都惦记按钮重新加载
 detector = GroundingDINODetector()
@@ -22,6 +23,8 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     2.工地安全监测:使用用户输入prompt,并开启工地后处理
     3.工地鲁棒监测:使用多组prompt ensemble,提高检测稳定性
     """
+    if image is None:
+        raise ValueError("请先上传图片。")
 
     # os.makedirs()可创建单个多层目录
     os.makedirs("outputs", exist_ok = True)
@@ -46,35 +49,24 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
         )
     
     elif mode == "工地安全检测":
-        detections, pil_image = detector.predict(
-            image_path = image_path,
-            text_prompt = text_prompt,
-            threshold = threshold,
-            text_threshold = text_threshold
-        )
-
-        detections = post_process_detections(detections)
-
-    elif mode == "工地鲁棒检测":
         prompt_list = [
-            "person. worker. construction woker.",
-            "helmet. gard hat. safety helmet.",
-            "safety vest. reflective vest. orange vest. high visibility vest."
+            "person. worker. construction worker."
+            "helmet. hard hat. safety helmet."
+            "safety vest. reflective vest. high visibility vest."
         ]
-
         detections, pil_image = run_prompt_ensemble(
             detector = detector,
             image_path = image_path,
             prompt_list = prompt_list,
             threshold = threshold,
             text_threshold = text_threshold,
-            ues_construction_postprocess = True
+            use_construction_postprocess = True
         )
-
     else:
         raise ValueError(f"位置检测模式:{mode}")
 
-    report = gengerate_report(
+
+    report = generate_report(
         detections = detections,
         image_size = pil_image.size,
         save_path = "outputs/report.json"
@@ -83,12 +75,10 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
     report["mode"] = mode
     report["prompt"] = text_prompt
 
-    if mode == "工地鲁棒检测":
-        report["prompt_list"] = [
-            "person. worker. construction worker.",
-            "helmet. hard hat. safety helmet.",
-            "safety vest. reflective vest. orange vest. high visibility vest."
-        ]
+    spatial_report = None
+
+    if mode == "工地安全检测":
+        spatial_report = analyze_person_safety_by_spatial_relation(detections)
 
     result_image = draw_detections(
         image = pil_image,
@@ -108,6 +98,7 @@ def openvision_predict(image, text_prompt, threshold, text_threshold, mode):
 
     summary_text = build_summary_report(
         report = report,
+        spatial_report = spatial_report,
         mode = mode,
         prompt = text_prompt
     )
@@ -145,7 +136,7 @@ demo = gr.Interface(
             label = "文本匹配阈值 text_threshold"
         ),
         gr.Dropdown(
-            choices = ["通用检测", "工地安全检测", "工地鲁棒检测"],
+            choices = ["通用检测", "工地安全检测"],
             value = "通用检测",
             label = "检测模式"
         )

@@ -3,7 +3,7 @@
 import json
 from collections import Counter
 
-def gengerate_report(detections, image_size, save_path = None):
+def generate_report(detections, image_size, save_path = None):
     """
     根据检测结果生成统计报告 
     """

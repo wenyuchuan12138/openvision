@@ -25,9 +25,10 @@ def get_head_region(person_box):
     x1, y1, x2, y2 = person_box
     height = y2 - y1
 
-    head_y2 = y1 + height * 0.35
+    head_y1 = y1 - height * 0.12
+    head_y2 = y1 + height * 0.30
 
-    return [x1, y1, x2, head_y2]
+    return [x1, head_y1, x2, head_y2]
 
 def get_body_region(person_box):
     """
@@ -35,12 +36,16 @@ def get_body_region(person_box):
     简单规则：人的bbox中间30%到85%作为身体区域。
     """
     x1, y1, x2, y2 = person_box
+    width = x2 - x1
     height = y2 - y1
 
-    body_y1 = y1 + height * 0.30
-    body_y2 = y1 + height * 0.85
+    # 适当放宽身体区域，提升被遮挡背心的匹配可能
+    body_x1 = x1 - width * 0.08
+    body_x2 = x2 + width * 0.08
+    body_y1 = y1 + height * 0.18
+    body_y2 = y1 + height * 0.72
 
-    return [x1, body_y1, x2, body_y2]
+    return [body_x1, body_y1, body_x2, body_y2]
 
 def analyze_person_safety_by_spatial_relation(detections):
     """
@@ -54,42 +59,55 @@ def analyze_person_safety_by_spatial_relation(detections):
     helmets = [det for det in detections if det["label"] == "helmet"]
     vests = [det for det in detections if det["label"] == "safety vest"]
 
+    used_helmet_indices = set()
+    used_vest_indices = set()
     person_results = []
 
-    for idx, person in enumerate(persons, start = 1):
+    for indx, person in enumerate(persons, start = 1):
         person_box = person["bbox"]
 
         head_region = get_head_region(person_box)
         body_region = get_body_region(person_box)
 
-        has_helmet = False
-        has_vest = False
+        matched_helmet_index =  None
+        matched_vest_index = None
 
-        for helmet in helmets:
-            helmet_center = box_center(helmet["bbox"])
-            if is_center_inside_box(helmet_center, head_region):
-                has_helmet = True
+        # 给当前人员匹配一个尚未使用的安全帽
+        for helmet_index, helmet in enumerate(helmets):
+            if helmet_index in used_helmet_indices:
+                continue
+
+            if is_center_inside_box(box_center(helmet["bbox"]), head_region):
+                matched_helmet_index = helmet_index
+                used_helmet_indices.add(helmet_index)
+                break
+       
+        # 给当前人员匹配一件尚未使用的背心
+        for vest_index, vest in enumerate(vests):
+            if vest_index in used_vest_indices:
+                continue
+
+            if is_center_inside_box(box_center(vest["boox"]), body_region):
+                matched_helmet_index = vest_index
+                used_vest_indices.add(vest_index)
                 break
 
-        for vest in vests:
-            vest_center = box_center(vest["bbox"])
-            if is_center_inside_box(vest_center, body_region):
-                has_vest = True
-                break
+        has_helmet = matched_helmet_index is not None
+        has_vest = matched_vest_index is not None
 
         risks = []
         
         if not has_helmet:
-            risks.append("未检测到安全帽")
+            risks.append("未检测到已佩戴安全帽")
         
         if not has_vest:
-            risks.append("未检测到反光背心")
+            risks.append("未检测到已穿反光背心")
 
         if not risks:
             risks.append("未发现明显风险")
 
         person_results.append({
-            "person_id": idx,
+            "person_id": indx,
             "person_bbox": person_box,
             "has_helmet": has_helmet,
             "has_safety_vest": has_vest,
@@ -98,6 +116,21 @@ def analyze_person_safety_by_spatial_relation(detections):
 
     spatial_report = {
         "total_persons": len(persons),
+
+        "detected_helmet_count": len(helmets),
+        "worn_helmet_count": len(used_helmet_indices),
+        "unmatched_helmet_count": len(helmets) - len(used_helmet_indices),
+        
+        "detected_vest_count": len(vests),
+        "worn_vest_count": len(used_vest_indices),
+        "unmatched_vest_count": len(vests) - len(used_vest_indices),
+
+        "missing_helmet_person_count": sum(
+            not item["has_helmet"] for item in person_results
+        ),
+        "missing_vest_person_count" : sum(
+            not item["has_safety_vest"] for item in person_results
+        ),
         "person_results": person_results
     }
 
