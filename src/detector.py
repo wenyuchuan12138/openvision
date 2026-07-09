@@ -51,14 +51,14 @@ class GroundingDINODetector:
         对单张图片进行开放词汇目标检测。
 
         参数：
-        image_path：图片路径。
-        text_prompt：文本提示词，例如 "cat. remote."。
-        threshold：检测框置信度阈值。
-        text_threshold：文本匹配阈值。
+        image_path:图片路径。
+        text_prompt:文本提示词,例如 "cat. remote."。
+        threshold:检测框置信度阈值。
+        text_threshold:文本匹配阈值。
 
         返回：
-        detections：检测结果列表。
-        image：原始 PIL 图片。
+        detections:检测结果列表。
+        image:原始 PIL 图片。
         """
         
         # 从image_path读取图片，转换成RGB三通道格式

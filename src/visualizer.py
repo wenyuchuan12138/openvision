@@ -8,12 +8,12 @@ def draw_detections(image, detections, save_path=None):
     在图片上绘制检测框。
 
     参数：
-    image：PIL 图片。
-    detections：检测结果列表。
-    save_path：保存路径。如果为 None，则不保存。
+    image:PIL 图片。
+    detections:检测结果列表。
+    save_path:保存路径。如果为 None,则不保存。
 
     返回：
-    draw_image：画好检测框的图片。
+    draw_image:画好检测框的图片。
     """
 
     draw_image = image.copy()
