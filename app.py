@@ -260,7 +260,7 @@ def run_detection(
 
     if detection_mode == "通用检测":
         detections, pil_image  = detector.predict(
-            iamge_path = image_path,
+            image_path = image_path,
             text_prompt = text_prompt,
             threshold = threshold,
             text_threshold = text_threshold
@@ -331,8 +331,7 @@ def build_mask_summary(mask_report):
             f"{obj['mask_area']}"
         )
         lines.append(
-            f"mask面积占比:"
-            f"{{obj['mask_area_ratio']}}"
+            f"mask面积占比: {obj['mask_area_ratio']}"
         )
         lines.append("")
     
@@ -476,7 +475,7 @@ def openvision_predict(
             )
 
             # 将mask叠加到原始图片
-            segementation_image = draw_segmentation_masks(
+            segmentation_image = draw_segmentation_masks(
                 image = pil_image,
                 segmentation_results = segmentation_results,
                 alpha = 0.45,
@@ -503,7 +502,7 @@ def openvision_predict(
                 )
 
             # 把SAM摘要追加在检测摘要之后
-            mask_summary = build_mask_summary(mask_summary)
+            mask_summary = build_mask_summary(mask_report)
 
             summary_text = (
                 summary_text
@@ -515,7 +514,7 @@ def openvision_predict(
             # 仅检测模式下没有SAM msak图
             # 为了保证Gradio三个输出都有内容
             # 第二张结果图暂时返回检测框图片
-            segementation_image = detection_image
+            segmentation_image = detection_image
 
             summary_text += (
                 "\n\n当前输出方式: 仅目标检测,"
@@ -524,7 +523,7 @@ def openvision_predict(
         
         return (
             detection_image,
-            segementation_image,
+            segmentation_image,
             summary_text
         )
     
