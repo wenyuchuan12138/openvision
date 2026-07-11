@@ -10,7 +10,7 @@ def analyze_construction_safety(report):
 
     第一版简单规则划分
     """
-                                           # 返回空字典
+     # 返回空字典
     label_counts = report.get("label_counts", {})
 
     person_count = label_counts.get("person", 0)
