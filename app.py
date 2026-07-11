@@ -40,6 +40,7 @@ def get_segmenter():
 
     global segmenter
 
+    # 延迟加载SAM模型
     if segmenter is None:
         print("第一次使用SAM,正在加载分割模型......")
 
@@ -49,6 +50,7 @@ def get_segmenter():
 
     return segmenter
 
+# 统一管理Grounding DINO检测
 def run_detection(
         image_path,
         text_prompt,
@@ -92,7 +94,7 @@ def run_detection(
     
     # 工地安全检测模式
     # 使用多组prompt分别检测人员、安全帽、反光背心
-    # 合并结果，在robust_detector内完成工地后处理
+    # 合并结果,去重,类别统一,在robust_detector内完成工地后处理
 
     elif detection_mode == "工地安全检测":
         prompt_list = [
@@ -206,19 +208,22 @@ def openvision_predict(
     if image is None:
         raise gr.Error("请先上传图片。")
     
+                                        # 去掉字符串两段的空白字符
     if not text_prompt or not text_prompt.strip():
         raise gr.Error("请输入检测提示词。")
     
     os.makedirs(
         "outputs",
+        # 如果目录已存在不会报错，不存在则创建
         exist_ok = True
     )
 
     image_path = "outputs/input_image.jpg"
+    # 保存上传图片，因为Grounding DINO需要路径
     image.save(image_path)
 
     try:
-        # 第一步 Grounding DINO检测
+        # 第一步 Grounding DINO检测，得到检测结果，原始图片
         detections, pil_image = run_detection(
             image_path = image_path,
             text_prompt = text_prompt,
@@ -227,7 +232,7 @@ def openvision_predict(
             detection_mode = detection_mode
         ) 
 
-        # 第二步 生成基础检测报告
+        # 第二步 生成基础检测报告，作用统计
         report = generate_report(
             detections = detections,
             image_size = pil_image.size,
@@ -238,19 +243,23 @@ def openvision_predict(
         report["output_mode"] = output_mode
         report["prompt"] = text_prompt
 
-        # 第三步 工地场景逐人空间分析
+        # 第三步 工地场景逐人空间分析，作用逐人判断分析
         spatial_report = None
 
         if detection_mode == "工地安全检测":
             spatial_report = (
                 analyze_person_safety_by_spatial_relation(detections)
             )
-
+        
+        # 打开文件用于写入，文件不存在则创建，文件已存在则清空原内容，覆盖写入新内容
         with open(
             "outputs/spatial_report.json",
+            # 把spatial report写进outputs/spatial_report.json    r只读   a追加，不清空文件
             "w",
             encoding = "utf-8"
+            # 把打开的文件对象绑定到变量file中，with结束时会自动关闭这个文件
         )as file:
+            # 把spatial_report这个python对象以json格式写入到file这个文件，False保留中文不转义，4输出json美观缩进
             json.dump(
                 spatial_report,
                 file,
@@ -295,6 +304,7 @@ def openvision_predict(
             # 使用Grounding DINO检测框作为SAM提示
             sam_detections = [
                 d for d in detections
+                # 这里的if时列表推导式里的过滤条件，只有符合条件，才把d放入sam_detections
                 if d["label"] in [
                     "helmet",
                     "safety vest"
@@ -362,6 +372,7 @@ def openvision_predict(
     except Exception as error:
         error_message = (
             "运行失败\n\n"
+                       # type取出当前异常对象error的类型,.__name__取这个异常类型的名称字符串,把异常输出出来
             f"错误类型: {type(error).__name__}\n"
             f"错误信息：{error}"
         )
@@ -371,6 +382,7 @@ def openvision_predict(
         raise gr.Error(error_message)
     
 # Gradio 页面
+      # 把输入、输出、函数连接起来
 demo = gr.Interface(
     fn = openvision_predict,
 
