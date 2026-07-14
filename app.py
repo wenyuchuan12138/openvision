@@ -16,6 +16,8 @@ from src.summary_report import build_summary_report
 from src.robust_detector import run_prompt_ensemble
 from src.spatial_analyzer import analyze_person_safety_by_spatial_relation
 
+from src.mask_safety_analyzer import analyze_safety_by_mask
+
 # 全局加载Grounding DINO
 detector = GroundingDINODetector()
 
@@ -157,10 +159,74 @@ def build_mask_summary(mask_report):
             f"{obj['mask_area']}"
         )
         lines.append(
-            f"mask面积占比: {obj['mask_area_ratio']}"
+            f"mask面积占比:"
+            f"{obj['mask_area_ratio']}"
         )
         lines.append("")
     
+    return "\n".join(lines)
+
+def build_mask_safety_summary(mask_safety_report):
+    """
+    基于SAM mask的安全分析结果转换为文字摘要
+    """
+
+    if mask_safety_report is None:
+        return ""
+    
+    lines = []
+
+    lines.append("===========基于SAM mask的安全分析")
+    lines.append(
+        f"检测到人员: {mask_safety_report['total_persons']}人"
+    )
+
+    lines.append(
+        f"检测到安全帽mask: {mask_safety_report['detected_helmet_masks']}个"
+    )
+
+    lines.append(
+        f"成功匹配为佩戴安全帽: {mask_safety_report['matched_helmet_masks']}个"
+    )
+
+    lines.append(
+        f"未匹配到人员头部的安全帽: {mask_safety_report['unmatched_helmet_masks']}个"
+    )
+
+    lines.append(
+        f"检测到反光背心mask: {mask_safety_report['detected_vest_masks']}个"
+    )
+
+    lines.append(
+        f"成功匹配为已穿反光背心: {mask_safety_report['matched_vest_masks']} 个"
+    )
+
+    lines.append(
+        f"未匹配到人员身体区域的反光背心: {mask_safety_report['unmatched_vest_masks']} 个"
+    )
+
+    lines.append("")
+    lines.append("逐人判断：")
+
+    for person in mask_safety_report["person_results"]:
+        lines.append(f"人员 {person['person_id']}:")
+        lines.append(
+            f"- 是否佩戴安全帽：{person['has_helmet']}"
+        )
+        lines.append(
+            f"- 是否穿反光背心：{person['has_safety_vest']}"
+        )
+        lines.append(
+            f"- 安全帽匹配比例：{person['helmet_match_ratio']}"
+        )
+        lines.append(
+            f"- 反光背心匹配比例：{person['vest_match_ratio']}"
+        )
+        lines.append(
+            f"- 风险提示：{', '.join(person['risks'])}"
+        )
+        lines.append("")
+
     return "\n".join(lines)
 
 def openvision_predict(
@@ -316,6 +382,26 @@ def openvision_predict(
                 detections = sam_detections
             )
 
+            mask_safety_report = None
+
+            if detection_mode == "工地安全检测":
+                mask_safety_report = analyze_safety_by_mask(
+                    detections = detections,
+                    segmentation_results = segmentation_results
+                )
+
+                with open(
+                    "outputs/mask_safety_report.json",
+                    "w",
+                    encoding = "utf-8"
+                )as file:
+                    json.dump(
+                        mask_safety_report,
+                        file,
+                        ensure_ascii = False,
+                        indent = 4
+                    )
+
             # 将mask叠加到原始图片
             segmentation_image = draw_segmentation_masks(
                 image = pil_image,
@@ -346,10 +432,14 @@ def openvision_predict(
             # 把SAM摘要追加在检测摘要之后
             mask_summary = build_mask_summary(mask_report)
 
+            mask_safety_summary = build_mask_safety_summary(mask_safety_report)
+
             summary_text = (
                 summary_text
                 + "\n\n"
-                + mask_summary
+                + mask_summary,
+                + "\n\n"
+                + mask_safety_summary
             )
 
         else:
