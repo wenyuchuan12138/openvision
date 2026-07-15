@@ -437,7 +437,7 @@ def openvision_predict(
             summary_text = (
                 summary_text
                 + "\n\n"
-                + mask_summary,
+                + mask_summary
                 + "\n\n"
                 + mask_safety_summary
             )
