@@ -11,10 +11,10 @@ def normalize_label(label):
     if "person" in label or "worker" in label or "man" in label:
         return "person"
     
-    if "helmet" in label or "hard hat" in label or "safety helmet" in label:
+    if "helmet" in label or "hard hat" in label or "safety helmet" in label or "hard hat" in label:
         return "helmet"
     
-    if "vest" in label or "visibility" in label or "safety" in label or "reflective" in label or "high visibility" in label or "orange vest" in label:
+    if "vest" in label or "visibility" in label or "safety" in label or "reflective" in label or "high visibility" in label or "orange vest" in label or "jacket" in label or "coat" in label or "gear" in label:
         return "safety vest"
     
     return None

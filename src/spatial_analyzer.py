@@ -6,14 +6,37 @@ def box_center(box):
     bbox格式: [x1, y1, x2, y2]
     """
     x1, y1, x2, y2 = box
-    return (x1 + x2)/2, (y1 + y2)/2
+    return (x1 + x2) / 2, (y1 + y2) / 2
+
+
+def calculate_iou(box1, box2):
+    """
+    计算两个bbox的IoU。
+    """
+    x1 = max(box1[0], box2[0])
+    y1 = max(box1[1], box2[1])
+    x2 = min(box1[2], box2[2])
+    y2 = min(box1[3], box2[3])
+
+    inter_width = max(0, x2 - x1)
+    inter_height = max(0, y2 - y1)
+    inter_area = inter_width * inter_height
+
+    area1 = max(0, box1[2] - box1[0]) * max(0, box1[3] - box1[1])
+    area2 = max(0, box2[2] - box2[0]) * max(0, box2[3] - box2[1])
+
+    union_area = area1 + area2 - inter_area
+    if union_area == 0:
+        return 0
+    return inter_area / union_area
+
 
 def is_center_inside_box(center, box):
     """
     判断一个点是否在bbox内。
     """
     cx, cy = center
-    x1, y1, x2, y2 =box
+    x1, y1, x2, y2 = box
 
     return x1 <= cx <= x2 and y1 <= cy <= y2
 
@@ -69,31 +92,49 @@ def analyze_person_safety_by_spatial_relation(detections):
         head_region = get_head_region(person_box)
         body_region = get_body_region(person_box)
 
-        matched_helmet_index =  None
+        matched_helmet_index = None
         matched_vest_index = None
+
+        best_helmet_score = 0
+        best_vest_score = 0
 
         # 给当前人员匹配一个尚未使用的安全帽
         for helmet_index, helmet in enumerate(helmets):
             if helmet_index in used_helmet_indices:
                 continue
 
-            if is_center_inside_box(box_center(helmet["bbox"]), head_region):
+            helmet_box = helmet["bbox"]
+            helmet_center = box_center(helmet_box)
+            helmet_iou = calculate_iou(head_region, helmet_box)
+            helmet_center_inside = 1 if is_center_inside_box(helmet_center, head_region) else 0
+            helmet_score = helmet_iou * 0.75 + helmet_center_inside * 0.25
+
+            if helmet_score > best_helmet_score:
+                best_helmet_score = helmet_score
                 matched_helmet_index = helmet_index
-                used_helmet_indices.add(helmet_index)
-                break
-       
+
         # 给当前人员匹配一件尚未使用的背心
         for vest_index, vest in enumerate(vests):
             if vest_index in used_vest_indices:
                 continue
 
-            if is_center_inside_box(box_center(vest["bbox"]), body_region):
-                matched_vest_index = vest_index
-                used_vest_indices.add(vest_index)
-                break
+            vest_box = vest["bbox"]
+            vest_center = box_center(vest_box)
+            vest_iou = calculate_iou(body_region, vest_box)
+            vest_center_inside = 1 if is_center_inside_box(vest_center, body_region) else 0
+            vest_score = vest_iou * 0.70 + vest_center_inside * 0.30
 
-        has_helmet = matched_helmet_index is not None
-        has_vest = matched_vest_index is not None
+            if vest_score > best_vest_score:
+                best_vest_score = vest_score
+                matched_vest_index = vest_index
+
+        has_helmet = matched_helmet_index is not None and best_helmet_score >= 0.12
+        has_vest = matched_vest_index is not None and best_vest_score >= 0.11
+
+        if has_helmet:
+            used_helmet_indices.add(matched_helmet_index)
+        if has_vest:
+            used_vest_indices.add(matched_vest_index)
 
         risks = []
         

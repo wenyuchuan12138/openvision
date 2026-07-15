@@ -4,7 +4,39 @@ def box_center(box):
     bbox格式:[x1, y1, x2, y2]
     """
     x1, y1, x2, y2 = box
-    return (x1 + x2) / 2, (y1 + y2)/2
+    return (x1 + x2) / 2, (y1 + y2) / 2
+
+
+def calculate_iou(box1, box2):
+    """
+    计算两个bbox的IoU
+    """
+    x1 = max(box1[0], box2[0])
+    y1 = max(box1[1], box2[1])
+    x2 = min(box1[2], box2[2])
+    y2 = min(box1[3], box2[3])
+
+    inter_width = max(0, x2 - x1)
+    inter_height = max(0, y2 - y1)
+    inter_area = inter_width * inter_height
+
+    area1 = max(0, box1[2] - box1[0]) * max(0, box1[3] - box1[1])
+    area2 = max(0, box2[2] - box2[0]) * max(0, box2[3] - box2[1])
+
+    union_area = area1 + area2 - inter_area
+    if union_area == 0:
+        return 0
+    return inter_area / union_area
+
+
+def is_center_inside_box(center, box):
+    """
+    判断一个点是否在bbox内部
+    """
+    cx, cy = center
+    x1, y1, x2, y2 = box
+    return x1 <= cx <= x2 and y1 <= cy <= y2
+
 
 def get_head_region(person_box):
     """
@@ -129,8 +161,13 @@ def analyze_safety_by_mask(detections, segmentation_results):
         has_helmet = False
         has_vest = False
 
+        best_helmet_score = 0
         best_helmet_ratio = 0
+        best_helmet_iou = 0
+
+        best_vest_score = 0
         best_vest_ratio = 0
+        best_vest_iou = 0
 
         matched_helmet_index = None
         matched_vest_index = None
@@ -141,12 +178,17 @@ def analyze_safety_by_mask(detections, segmentation_results):
                 continue
 
             ratio = mask_match_ratio(
-                mask = helmet["mask"],
-                box = head_region
+                mask=helmet["mask"],
+                box=head_region
             )
+            iou = calculate_iou(helmet["bbox"], head_region)
+            center_inside = 1 if is_center_inside_box(box_center(helmet["bbox"]), head_region) else 0
+            score = ratio * 0.65 + iou * 0.25 + center_inside * 0.10
 
-            if ratio > best_helmet_ratio:
+            if score > best_helmet_score:
+                best_helmet_score = score
                 best_helmet_ratio = ratio
+                best_helmet_iou = iou
                 matched_helmet_index = index
 
         # 匹配反光背心mask
@@ -155,20 +197,31 @@ def analyze_safety_by_mask(detections, segmentation_results):
                 continue
 
             ratio = mask_match_ratio(
-                mask = vest["mask"],
-                box = body_region
+                mask=vest["mask"],
+                box=body_region
             )
+            iou = calculate_iou(vest["bbox"], body_region)
+            center_inside = 1 if is_center_inside_box(box_center(vest["bbox"]), body_region) else 0
+            score = ratio * 0.60 + iou * 0.30 + center_inside * 0.10
 
-            if ratio > best_vest_ratio:
+            if score > best_vest_score:
+                best_vest_score = score
                 best_vest_ratio = ratio
+                best_vest_iou = iou
                 matched_vest_index = index
 
         # 阈值可以后续调参
-        if matched_helmet_index is not None and best_helmet_ratio >= 0.35:
+        if matched_helmet_index is not None and (
+            best_helmet_ratio >= 0.22 and best_helmet_iou >= 0.05
+            or best_helmet_score >= 0.20
+        ):
             has_helmet = True
             used_helmet_indices.add(matched_helmet_index)
 
-        if matched_vest_index is not None and best_vest_ratio >= 0.30:
+        if matched_vest_index is not None and (
+            best_vest_ratio >= 0.20 and best_vest_iou >= 0.05
+            or best_vest_score >= 0.18
+        ):
             has_vest = True
             used_vest_indices.add(matched_vest_index)
 
