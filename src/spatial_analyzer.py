@@ -31,6 +31,15 @@ def calculate_iou(box1, box2):
     return inter_area / union_area
 
 
+def normalized_distance(value, center, max_dist):
+    """
+    归一化水平距离分数。
+    """
+    if max_dist <= 0:
+        return 0
+    return max(0.0, 1.0 - abs(value - center) / max_dist)
+
+
 def is_center_inside_box(center, box):
     """
     判断一个点是否在bbox内。
@@ -97,8 +106,13 @@ def analyze_person_safety_by_spatial_relation(detections):
 
         best_helmet_score = 0
         best_vest_score = 0
+        best_helmet_center_inside = False
+        best_vest_center_inside = False
 
         # 给当前人员匹配一个尚未使用的安全帽
+        person_center_x, _ = box_center(person_box)
+        person_width = max(1.0, person_box[2] - person_box[0])
+
         for helmet_index, helmet in enumerate(helmets):
             if helmet_index in used_helmet_indices:
                 continue
@@ -106,11 +120,15 @@ def analyze_person_safety_by_spatial_relation(detections):
             helmet_box = helmet["bbox"]
             helmet_center = box_center(helmet_box)
             helmet_iou = calculate_iou(head_region, helmet_box)
-            helmet_center_inside = 1 if is_center_inside_box(helmet_center, head_region) else 0
-            helmet_score = helmet_iou * 0.75 + helmet_center_inside * 0.25
+            helmet_center_inside = is_center_inside_box(helmet_center, head_region)
+            helmet_x_score = normalized_distance(helmet_center[0], person_center_x, person_width * 0.6)
+            helmet_score = helmet_iou * 0.55 + (1.0 if helmet_center_inside else 0.0) * 0.25 + helmet_x_score * 0.20
 
             if helmet_score > best_helmet_score:
                 best_helmet_score = helmet_score
+                best_helmet_center_inside = helmet_center_inside
+                best_helmet_iou = helmet_iou
+                best_helmet_x_score = helmet_x_score
                 matched_helmet_index = helmet_index
 
         # 给当前人员匹配一件尚未使用的背心
@@ -121,15 +139,31 @@ def analyze_person_safety_by_spatial_relation(detections):
             vest_box = vest["bbox"]
             vest_center = box_center(vest_box)
             vest_iou = calculate_iou(body_region, vest_box)
-            vest_center_inside = 1 if is_center_inside_box(vest_center, body_region) else 0
-            vest_score = vest_iou * 0.70 + vest_center_inside * 0.30
+            vest_center_inside = is_center_inside_box(vest_center, body_region)
+            vest_x_score = normalized_distance(vest_center[0], person_center_x, person_width * 0.8)
+            vest_score = vest_iou * 0.50 + (1.0 if vest_center_inside else 0.0) * 0.30 + vest_x_score * 0.20
 
             if vest_score > best_vest_score:
                 best_vest_score = vest_score
+                best_vest_center_inside = vest_center_inside
+                best_vest_iou = vest_iou
+                best_vest_x_score = vest_x_score
                 matched_vest_index = vest_index
 
-        has_helmet = matched_helmet_index is not None and best_helmet_score >= 0.12
-        has_vest = matched_vest_index is not None and best_vest_score >= 0.11
+        has_helmet = (
+            matched_helmet_index is not None
+            and best_helmet_center_inside
+            and best_helmet_score >= 0.30
+            and best_helmet_iou >= 0.08
+            and best_helmet_x_score >= 0.30
+        )
+        has_vest = (
+            matched_vest_index is not None
+            and best_vest_center_inside
+            and best_vest_score >= 0.28
+            and best_vest_iou >= 0.06
+            and best_vest_x_score >= 0.30
+        )
 
         if has_helmet:
             used_helmet_indices.add(matched_helmet_index)
