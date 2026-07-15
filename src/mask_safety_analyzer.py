@@ -120,7 +120,7 @@ def analyze_safety_by_mask(detections, segmentation_results):
 
     person_results = []
 
-    for person_id, person in enumerate(person, start = 1):
+    for person_id, person in enumerate(persons, start = 1):
         person_box = person["bbox"]
 
         head_region = get_head_region(person_box)
