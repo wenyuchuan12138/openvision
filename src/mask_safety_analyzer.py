@@ -116,7 +116,7 @@ def analyze_safety_by_mask(detections, segmentation_results):
     ]
 
     used_helmet_indices = set()
-    uesd_vest_indices = set()
+    used_vest_indices = set()
 
     person_results = []
 
@@ -151,7 +151,7 @@ def analyze_safety_by_mask(detections, segmentation_results):
 
         # 匹配反光背心mask
         for index, vest in enumerate(vest_masks):
-            if index in uesd_vest_indices:
+            if index in used_vest_indices:
                 continue
 
             ratio = mask_match_ratio(
@@ -170,7 +170,7 @@ def analyze_safety_by_mask(detections, segmentation_results):
 
         if matched_vest_index is not None and best_vest_ratio >= 0.30:
             has_vest = True
-            uesd_vest_indices.add(matched_vest_index)
+            used_vest_indices.add(matched_vest_index)
 
         risks = []
 
@@ -201,8 +201,8 @@ def analyze_safety_by_mask(detections, segmentation_results):
         "unmatched_helmet_masks": len(helmet_masks) - len(used_helmet_indices),
 
         "detected_vest_masks": len(vest_masks),
-        "matched_vest_mask": len(uesd_vest_indices),
-        "unmatched_vest_masks": len(vest_masks) - len(uesd_vest_indices),
+        "matched_vest_masks": len(used_vest_indices),
+        "unmatched_vest_masks": len(vest_masks) - len(used_vest_indices),
 
         "missing_helmet_person_count": sum(
             not item["has_helmet"]
