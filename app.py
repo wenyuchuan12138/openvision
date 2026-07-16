@@ -18,6 +18,12 @@ from src.spatial_analyzer import analyze_person_safety_by_spatial_relation
 
 from src.mask_safety_analyzer import analyze_safety_by_mask
 
+from src.yolo_detector import YOLODetector
+from src.fusion import fuse_detections
+
+# 初始化YOLO模型
+yolo_detector = YOLODetector()
+
 # 全局加载Grounding DINO
 detector = GroundingDINODetector()
 
@@ -112,6 +118,12 @@ def run_detection(
             threshold = threshold,
             text_threshold = text_threshold,
             use_construction_postprocess = True
+        )
+
+        yolo_results = yolo_detector.predict(image_path = image_path)
+        detections = fuse_detections(
+            grounding_results = detections,
+            yolo_results = yolo_results
         )
 
     else:
