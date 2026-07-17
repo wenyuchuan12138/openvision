@@ -15,6 +15,16 @@ def generate_report(detections, image_size, save_path = None):
     labels = [det["label"] for det in detections]
     label_counts = Counter(labels)
 
+    sources = [
+        det.get(
+            "source",
+            "unknown"
+        )
+        for det in detections
+    ]
+
+    source_counts = Counter(sources)
+
     objects = []
 
     for det in detections:
@@ -32,6 +42,10 @@ def generate_report(detections, image_size, save_path = None):
             "label": det["label"],
             "score": det["score"],
             "bbox": det["bbox"],
+            "source": det.get(
+                "source",
+                "unknown"
+            ),
             "box_area": round(box_area, 2),
             "area_ratio": round(area_ratio, 4)
         })
@@ -41,6 +55,7 @@ def generate_report(detections, image_size, save_path = None):
         "image_height": height,
         "total_objects": len(detections),
         "label_counts": dict(label_counts),
+        "source_counts": dict(source_counts),
         "objects": objects
     }
 
