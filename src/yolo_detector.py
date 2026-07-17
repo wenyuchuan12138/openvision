@@ -48,7 +48,7 @@ class YOLODetector:
         detections = []
 
         for result in results:
-            boxes = results.boxes
+            boxes = result.boxes
 
             for box in boxes:
                 x1, y1, x2, y2 = (
