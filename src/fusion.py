@@ -110,7 +110,7 @@ def fuse_detections(
             else:
                 best = gd.copy()
 
-            best["scource"] = ("Grounding DINO + YOLO")
+            best["source"] = ("Grounding DINO + YOLO")
 
             final_results.append(best)
 

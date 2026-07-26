@@ -22,12 +22,28 @@ def draw_detections(image, detections, save_path=None):
     for det in detections:
         label = det["label"]
         score = det["score"]
+        source = det.get(
+            "source",
+            "unknown"
+        )
         x1, y1, x2, y2 = det["bbox"]
+
+        if source == "YOLO":
+            color = "red"
+
+        elif source == "Grounding DINO":
+            color = "blue"
+
+        elif source == "Grounding DINO + YOLO":
+            color == "green"
+
+        else:
+            color = "yellow"
         
         # 根据bbox画红色矩形框
-        draw.rectangle([x1, y1, x2, y2], outline = "red", width = 3)
+        draw.rectangle([x1, y1, x2, y2], outline = color, width = 3)
         # 在左上角写类别和置信度
-        draw.text((x1, y1), f"{label}: {score}", fill = "green")
+        draw.text((x1, y1), f"{label}: {score:.2f}[{source}]", fill = color)
 
     if save_path is not None:
         draw_image.save(save_path)
