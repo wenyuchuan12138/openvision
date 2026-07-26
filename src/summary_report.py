@@ -16,6 +16,15 @@ def build_summary_report(report, mode, prompt, spatial_report):
     lines.append(f"检测提示词:{prompt}")
     lines.append(f"图片尺寸:{report.get('image_width')} x {report.get('image_height')}")
     lines.append(f"检测目标总数:{report.get('total_objects')}")
+
+    lines.append("")
+    lines.append("==========模型来源统计==========")
+
+    for source, count in report["source_counts"].items():
+        lines.append(
+            f"{source}: {count}个"
+        )
+
     lines.append("")
 
     if mode == "工地安全检测":

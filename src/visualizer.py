@@ -35,7 +35,7 @@ def draw_detections(image, detections, save_path=None):
             color = "blue"
 
         elif source == "Grounding DINO + YOLO":
-            color == "green"
+            color = "green"
 
         else:
             color = "yellow"
