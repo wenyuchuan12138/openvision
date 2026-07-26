@@ -503,27 +503,17 @@ def click_detection(evt: gr.SelectData):
 
     y = evt.index[1]
 
-    for i, det in enumerate(current_detections):
-        x1, y1, x2, y2 = det["bbox"]
+    result = find_clicked_object(x, y, current_detections)
 
-        if (x1 <= x <= x2 and y1 <= y <= y2):
-            return f"""
-目标编号:
-{i + 1}
+    text = ""
 
-类别:
-{det['label']}
+    for k, v in result.items():
 
-置信度:
-{det['score']}
+        text +=(
+            f"{k}: {v}\n\n"
+        )
 
-来源:
-{det.get('source', 'unknown')}
-
-检测框:
-{det['bbox']}
-"""
-        return "未点击检测目标"
+    return text
 
     
 with gr.Blocks() as demo:

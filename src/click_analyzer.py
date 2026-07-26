@@ -27,6 +27,6 @@ def find_clicked_object(x, y, detections):
                 "检测框": det["bbox"]
             }
 
-        return {
-            "提示": "没有点击到检测目标"
-        }
+    return {
+        "提示": "没有点击到检测目标"
+    }
