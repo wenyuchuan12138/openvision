@@ -481,16 +481,12 @@ def openvision_predict(
         )
     
     except Exception as error:
-        error_message = (
-            "运行失败\n\n"
-                       # type取出当前异常对象error的类型,.__name__取这个异常类型的名称字符串,把异常输出出来
-            f"错误类型: {type(error).__name__}\n"
-            f"错误信息：{error}"
-        )
 
-        print(error_message)
+        import traceback
 
-        raise gr.Error(error_message)
+        traceback.print_exc()
+
+        raise error
 
 def click_detection(evt: gr.SelectData):
     """
