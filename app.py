@@ -562,7 +562,7 @@ with gr.Blocks() as demo:
                 maximum = 0.9,
                 value = 0.25,
                 step = 0.01,
-                lable = "文本匹配阈值"
+                label = "文本匹配阈值"
             )
 
             detection_mode = gr.Dropdown(
