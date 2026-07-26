@@ -303,7 +303,6 @@ def openvision_predict(
 
     image_path = image
     # 保存上传图片，因为Grounding DINO需要路径
-    image.save(image_path)
 
     try:
         # 第一步 Grounding DINO检测，得到检测结果，原始图片
