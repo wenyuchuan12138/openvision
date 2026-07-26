@@ -146,22 +146,71 @@ def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
 
         head_region = get_head_region(person_box)
 
-        # 如果Pose,优先使用关键点
-        if pose_results:
-            for pose_person in pose_results:
+        # # 如果Pose,优先使用关键点
+        # if pose_results:
+        #     for pose_person in pose_results:
 
-                if calculate_iou(
+        #         if calculate_iou(
+        #             person_box,
+        #             pose_person["bbox"]
+        #         ) > 0.5:
+        #             pose_head = get_pose_head_region(
+        #                 pose_person["keypoints"]
+        #             )
+
+        #             if pose_head:
+        #                 head_region = pose_head
+
+        #             break
+
+        # 原35%规则 + Pose辅助
+        original_head_region = get_head_region(person_box)
+
+        head_region = original_head_region
+
+        if pose_results:
+            pose_score_regions = []
+
+            for pose_person in pose_results:
+                iou = calculate_iou(
                     person_box,
                     pose_person["bbox"]
-                ) > 0.5:
+                )
+
+                if iou > 0.3:
                     pose_head = get_pose_head_region(
                         pose_person["keypoints"]
                     )
 
                     if pose_head:
-                        head_region = pose_head
+                        pose_score_regions.append(pose_head)
 
-                    break
+            # Pose只有辅助作用
+            if len(pose_score_regions) > 0:
+                pose_head = pose_score_regions[0]
+
+                # 两个区域取并集
+                head_region = [
+                    min(
+                        original_head_region[0],
+                        pose_head[0]
+                    ),
+
+                    min(
+                        original_head_region[1],
+                        pose_head[1]
+                    ),
+
+                    max(
+                        original_head_region[2],
+                        pose_head[2]
+                    ),
+
+                    max(
+                        original_head_region[3],
+                        pose_head[3]
+                    )
+                ]
 
         body_region = get_body_region(person_box)
 
