@@ -418,7 +418,8 @@ def openvision_predict(
             if detection_mode == "工地安全检测":
                 mask_safety_report = analyze_safety_by_mask(
                     detections = detections,
-                    segmentation_results = segmentation_results
+                    segmentation_results = segmentation_results,
+                    pose_results = pose_results
                 )
 
                 with open(

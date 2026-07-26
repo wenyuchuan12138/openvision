@@ -127,7 +127,44 @@ def mask_match_ratio(mask, box):
 
     return inside_area / total_area
 
-def analyze_safety_by_mask(detections, segmentation_results):
+def get_pose_head_region(keypoints):
+    if keypoints is None:
+        return None
+
+    # COCO:
+    # 0 nose
+    # 1 left eye
+    # 2 right eye
+    # 3 left ear
+    # 4 right ear
+
+    head_points = keypoints[:5]
+    xs = []
+    ys = []
+
+    for p in head_points:
+        if p[0] > 0 and p[1] > 0:
+            xs.append(p[0])
+            ys.append(p[1])
+
+    if len(xs) < 2:
+        return None
+
+    x1 = min(xs)
+    x2 = max(xs)
+    y1 = min(ys)
+    y2 = max(ys)
+
+    height = y2 - y1
+
+    return [
+        x1 - 30,
+        y1 - height * 2,
+        y2 + 30,
+        y2 + 20
+    ]
+
+def analyze_safety_by_mask(detections, segmentation_results, pose_results = None):
     """
     基于SAM mask进行人员安全装备关联判断
 
@@ -165,6 +202,21 @@ def analyze_safety_by_mask(detections, segmentation_results):
         person_box = person["bbox"]
 
         head_region = get_head_region(person_box)
+
+        if pose_results:
+            for pose_person in pose_results:
+                if calculate_iou(
+                    person_box,
+                    pose_person["bbox"]
+                ) > 0.3:
+
+                    pose_head = get_pose_head_region(pose_person["keypoints"])
+
+                    if pose_head:
+                        head_region = pose_head
+
+                    break
+
         body_region = get_body_region(person_box)
 
         has_helmet = False
