@@ -62,6 +62,52 @@ def get_head_region(person_box):
 
     return [x1, head_y1, x2, head_y2]
 
+def get_pose_head_region(pose):
+    """
+    根据YOLO Pose关键点生成头部区域
+    
+    COCO关键点:
+    0 nose
+    1 left eye
+    2 right eye
+    3 left ear
+    4 right ear
+    """
+
+    if pose is None:
+        return None
+
+    head_points = pose[:5]
+
+    xs = [
+        p[0]
+        for p in head_points
+        if p[0] > 0
+    ]
+
+    ys = [
+        p[1]
+        for p in head_points
+        if p[1] > 0
+    ]
+
+    if len(xs) == 0:
+        return None
+
+    x1 = min(xs)
+    x2 = max(xs)
+    y1 = min(ys)
+    y2 = max(ys)
+
+    height = y2 - y1
+
+    return [
+        x1 - 20,
+        y1 - height * 1.5,
+        x2 + 20,
+        y2 + 10
+    ]
+
 def get_body_region(person_box):
     """
     获取人的身体区域。
@@ -79,7 +125,7 @@ def get_body_region(person_box):
 
     return [body_x1, body_y1, body_x2, body_y2]
 
-def analyze_person_safety_by_spatial_relation(detections):
+def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
     """
     基于bbox空间位置关系，逐人判断安全风险。
     判断规则：
@@ -99,6 +145,24 @@ def analyze_person_safety_by_spatial_relation(detections):
         person_box = person["bbox"]
 
         head_region = get_head_region(person_box)
+
+        # 如果Pose,优先使用关键点
+        if pose_results:
+            for pose_person in pose_results:
+
+                if calculate_iou(
+                    person_box,
+                    pose_person["bbox"]
+                ) > 0.5:
+                    pose_head = get_pose_head_region(
+                        pose_person["keypoints"]
+                    )
+
+                    if pose_head:
+                        head_region = pose_head
+
+                    break
+
         body_region = get_body_region(person_box)
 
         matched_helmet_index = None

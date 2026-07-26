@@ -23,8 +23,15 @@ from src.fusion import fuse_detections
 
 from src.click_analyzer import find_clicked_object
 
+from src.pose_detector import YOLOPoseDetector
+
+
+
 # 初始化YOLO模型
 yolo_detector = YOLODetector()
+
+#初始化
+pose_detector = YOLOPoseDetector()
 
 # 全局加载Grounding DINO
 detector = GroundingDINODetector()
@@ -314,6 +321,13 @@ def openvision_predict(
             detection_mode = detection_mode
         ) 
 
+        # YOLO Pose人体关键点检测
+        pose_results = []
+
+        if detection_mode == "工地安全检测":
+
+            pose_results = pose_detector.predict(image_path = image_path)
+
         # 第二步 生成基础检测报告，作用统计
         report = generate_report(
             detections = detections,
@@ -330,7 +344,7 @@ def openvision_predict(
 
         if detection_mode == "工地安全检测":
             spatial_report = (
-                analyze_person_safety_by_spatial_relation(detections)
+                analyze_person_safety_by_spatial_relation(detections, pose_results)
             )
         
         # 打开文件用于写入，文件不存在则创建，文件已存在则清空原内容，覆盖写入新内容
