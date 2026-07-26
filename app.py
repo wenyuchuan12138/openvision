@@ -21,17 +21,22 @@ from src.mask_safety_analyzer import analyze_safety_by_mask
 from src.yolo_detector import YOLODetector
 from src.fusion import fuse_detections
 
+from src.click_analyzer import find_clicked_object
+
 # 初始化YOLO模型
 yolo_detector = YOLODetector()
 
 # 全局加载Grounding DINO
 detector = GroundingDINODetector()
 
+
 # SAM延迟加载变量
 # 先设置未None，表示程序启动时暂时不加载SAM
 # 用户第一次选择“检测+SAM分割”后，再加载模型
 
 segmenter = None
+
+current_detections = []
 
 def get_segmenter():
     """
@@ -464,6 +469,10 @@ def openvision_predict(
                 "\n\n当前输出方式: 仅目标检测,"
                 "未运行SAM分割"
             )
+
+        global current_detections
+
+        current_detections = detections
         
         return (
             detection_image,
@@ -482,94 +491,145 @@ def openvision_predict(
         print(error_message)
 
         raise gr.Error(error_message)
+
+def click_detection(evt: gr.SelectData):
+    """
+    点击图片后显示目标信息
+    """
+
+    global current_detections
+
+    x = evt.index[0]
+
+    y = evt.index[1]
+
+    for i, det in enumerate(current_detections):
+        x1, y1, x2, y2 = det["bbox"]
+
+        if (x1 <= x <= x2 and y1 <= y <= y2):
+            return f"""
+目标编号:
+{i + 1}
+
+类别:
+{det['label']}
+
+置信度:
+{det['score']}
+
+来源:
+{det.get('source', 'unknown')}
+
+检测框:
+{det['bbox']}
+"""
+        return "未点击检测目标"
+
     
-# Gradio 页面
-      # 把输入、输出、函数连接起来
-demo = gr.Interface(
-    fn = openvision_predict,
+with gr.Blocks() as demo:
+    gr.Markdown(
+        """
+        OpenVision开放词汇目标检测系统
 
-    inputs = [
-        gr.Image(
-            type = "pil",
-            label = "上传图片"
-        ),
-
-        gr.Textbox(
-            label = "检测提示词",
-            value = (
-                "person. helmet. hard hat."
-                "reflective vest."
-            ),
-            placeholder = (
-                "通用检测示例: cat. dog. car."
-                "工地检测示例: person. helmet. hard hat."
-            )
-        ),
-
-        gr.Slider(
-            minimum = 0.1,
-            maximum = 0.9,
-            value = 0.29,
-            step = 0.01,
-            label = "检测框阈值 threshold"
-        ),
-
-        gr.Slider(
-            minimum = 0.1,
-            maximum = 0.9,
-            value = 0.18,
-            step = 0.01,
-            label = "文本匹配阈值 text_threshold"
-        ),
-
-        gr.Dropdown(
-            choices = [
-                "通用检测",
-                "工地安全检测"
-            ],
-            value  = "通用检测",
-            label = "检测模式"
-        ),
-
-        gr.Radio(
-            choices = [
-                "仅目标检测",
-                "检测+SAM分割"
-            ],
-            value = "仅目标检测",
-            label = "输出方式"
-        )
-    ],
-
-    outputs = [
-        gr.Image(
-            type = "pil",
-            label = "Groudning DINO检测结果"
-        ),
-
-        gr.Image(
-            type = "pil",
-            label = "SAM分割结果"
-        ),
-
-        gr.Textbox(
-            label = "检测与分割摘要",
-            lines = 24
-        )
-    ],
-
-    title = (
-        "OpenVision："
-        "Grounding DINO + SAM 开放词汇检测分割系统"
-    ),
-
-    description = (
-        "上传图片并输入检测提示词。"
-        "Grounding DINO 负责根据文本定位目标，"
-        "SAM 根据检测框生成像素级 mask。"
+        基于 Grounding DINO + YOLO + SAM 的多模型视觉检测系统。
+        上传图片，输入检测提示词，可输出检测结果、分割结果以及目标详细信息。
+        """
     )
 
-)
+    with gr.Row():
+        with gr.Column():
+
+            input_image = gr.Image(
+                type = "filepath",
+                label = "上传图片"
+            )
+
+            text_prompt = gr.Textbox(
+                value = "person. helmet. hard hat. reflective vest.",
+                label = "检测提示词"
+            )
+
+            threshold = gr.Slider(
+                minimum = 0.1,
+                maximum = 0.9,
+                value = 0.3,
+                step = 0.01,
+                label = "检测框阈值"
+            )
+
+            text_threshold = gr.Slider(
+                minimum = 0.1,
+                maximum = 0.9,
+                value = 0.25,
+                step = 0.01,
+                lable = "文本匹配阈值"
+            )
+
+            detection_mode = gr.Dropdown(
+                choices = [
+                    "通用检测",
+                    "工地安全检测"
+                ],
+                value = "工地安全检测",
+                label = "检测模式"
+            )
+
+            result_mode = gr.Radio(
+                choices = [
+                    "仅目标检测",
+                    "检测 + SAM分割"
+                ],
+                value = "检测 + SAM分割",
+                label = "输出模式"
+            )
+
+            submit_btn = gr.Button("提交检测")
+
+        with gr.Column():
+
+            detection_output = gr.Image(
+                type = "pil",
+                label = "检测结果"
+            )
+
+            segmentation_output = gr.Image(
+                type = "pil",
+                label = "SAM分割结果"
+            )
+
+            summary_output = gr.Textbox(
+                label = "检测与分割摘要",
+                lines = 20
+            )
+
+    # 点击提交执行检测
+    submit_btn.click(
+        fn = openvision_predict,
+
+        inputs = [
+            input_image,
+            text_prompt,
+            threshold,
+            text_threshold,
+            detection_mode,
+            result_mode
+        ],
+
+        outputs = [
+            detection_output,
+            segmentation_output,
+            summary_output
+        ]
+    )
+
+    # 点击检测图片查看目标信息
+    detection_output.select(
+        fn = click_detection,
+
+        outputs = [
+            summary_output
+        ]
+    )
 
 if __name__ == "__main__":
     demo.launch(

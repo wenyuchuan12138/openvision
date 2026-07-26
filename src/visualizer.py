@@ -3,7 +3,7 @@
 from PIL import ImageDraw
 
                   # 接收原图， 检测结果， 保存路径
-def draw_detections(image, detections, save_path=None):
+def draw_detections(image, detections, save_path = None):
     """
     在图片上绘制检测框。
 
@@ -14,6 +14,8 @@ def draw_detections(image, detections, save_path=None):
 
     返回：
     draw_image:画好检测框的图片。
+
+    保留detections供点击查询
     """
 
     draw_image = image.copy()
