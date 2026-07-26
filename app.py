@@ -301,7 +301,7 @@ def openvision_predict(
         exist_ok = True
     )
 
-    image_path = "outputs/input_image.jpg"
+    image_path = image
     # 保存上传图片，因为Grounding DINO需要路径
     image.save(image_path)
 
@@ -389,6 +389,7 @@ def openvision_predict(
                 d for d in detections
                 # 这里的if时列表推导式里的过滤条件，只有符合条件，才把d放入sam_detections
                 if d["label"] in [
+                    "person",
                     "helmet",
                     "safety vest"
                 ]
