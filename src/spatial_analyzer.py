@@ -73,6 +73,25 @@ def helmet_match_cost(person_box, helmet_box):
 
     return cost
 
+def vest_match_cost(person_box, vest_box):
+    """
+    person和反光背心匹配代价
+    越小越匹配
+    """
+
+    person_center_x = (person_box[0] + person_box[2]) / 2
+    person_center_y = (person_box[1] + person_box[3]) / 2
+    vest_center_x = (vest_box[0] + vest_box[2]) / 2
+    vest_center_y = (vest_box[1] + vest_box[3]) / 2
+
+    # 水平偏移
+    horizontal_error = abs(person_center_x - vest_center_x)
+
+    # 背心应该在人身体中部
+    vertical_error = abs(vest_center_y - person_center_y)
+
+    return(horizontal_error * 0.6 + vertical_error * 0.4)
+
 def normalized_distance(value, center, max_dist):
     """
     归一化水平距离分数。
@@ -203,6 +222,27 @@ def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
             if cost < 150:
                 helmet_assignment[r] = c
 
+    #Hungarian安全背心全局匹配
+    vest_assignment = {}
+
+    if len(persons) > 0 and len(vests) > 0:
+        vest_cost_matrix = np.zeros(
+            (len(persons), len(vests))
+        )
+
+        for i, person in enumerate(persons):
+            for j, vest in enumerate(vests):
+                vest_cost_matrix[i, j] = vest_match_cost(
+                    person["bbox"],
+                    vest["bbox"]
+                )
+
+        rows, cols = linear_sum_assignment(vest_cost_matrix)
+
+        for r, c in zip(rows, cols):
+            if vest_cost_matrix[r, c] < 300:
+                vest_assignment[r] = c
+
     used_helmet_indices = set()
     used_vest_indices = set()
     person_results = []
@@ -269,60 +309,51 @@ def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
         matched_helmet_index = None
 
         if person_index in helmet_assignment:
-            matched_helmet_index = (helmet_assignment[person_index])
-            matched_helmet = helmets[matched_helmet_index]
-
+            matched_helmet_index = helmet_assignment[person_index]
         else:
             matched_helmet_index = None
             
         matched_vest_index = None
+        if person_index in vest_assignment:
+            matched_vest_index = vest_assignment[person_index]
 
         best_helmet_score = 0
         best_vest_score = 0
         best_helmet_center_inside = False
         best_vest_center_inside = False
+        best_vest_iou = 0
+        best_vest_x_score = 0
 
-        
-
-        # 给当前人员匹配一件尚未使用的背心
-        for vest_index, vest in enumerate(vests):
-            if vest_index in used_vest_indices:
-                continue
-
-            vest_box = vest["bbox"]
-            vest_center = box_center(vest_box)
-            vest_iou = calculate_iou(body_region, vest_box)
-            vest_center_inside = is_center_inside_box(vest_center, body_region)
-            vest_x_score = normalized_distance(vest_center[0], person_center_x, person_width * 0.8)
-            vest_score = vest_iou * 0.50 + (1.0 if vest_center_inside else 0.0) * 0.30 + vest_x_score * 0.20
-
-            if vest_score > best_vest_score:
-                best_vest_score = vest_score
-                best_vest_center_inside = vest_center_inside
-                best_vest_iou = vest_iou
-                best_vest_x_score = vest_x_score
-                matched_vest_index = vest_index
 
         has_helmet = False
 
         if matched_helmet_index is not None:
             helmet = helmets[matched_helmet_index]
-
             helmet_center = box_center(helmet["bbox"])
 
-            if matched_helmet_index is not None:
-                helmet = helmets[matched_helmet_index]
-
-                helmet_center = box_center(helmet["bbox"])
-
-                if is_center_inside_box(
-                    helmet_center,
-                    head_region
-                ):
-                    has_helmet = True
-
-            if is_center_inside_box(helmet_center, head_region):
+            if is_center_inside_box(
+                helmet_center,
+                head_region
+            ):
                 has_helmet = True
+
+        if matched_vest_index is not None:
+            vest = vests[matched_vest_index]
+            vest_center = box_center(vest["bbox"])
+            best_vest_center_inside = is_center_inside_box(
+                vest_center,
+                body_region
+            )
+            best_vest_iou = calculate_iou(
+                vest["bbox"],
+                body_region
+            )
+            best_vest_x_score = normalized_distance(
+                vest_center[0],
+                person_center_x,
+                person_width * 0.8
+            )
+            best_vest_score = 1.0 if best_vest_center_inside else 0.0
 
         has_vest = (
             matched_vest_index is not None
