@@ -65,7 +65,7 @@ def helmet_match_cost(person_box, helmet_box):
         inside_score = 0
 
     else:
-        inside_score = 200
+        inside_score = 1000
 
     distance = center_distance(head_region, helmet_box)
 

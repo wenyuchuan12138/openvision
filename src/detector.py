@@ -132,3 +132,5 @@ class GroundingDINODetector:
             # }
 
         return detections, image
+
+
