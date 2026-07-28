@@ -1,5 +1,9 @@
 # 工地安全风险判断专用逐人空间关系判断
 
+import numpy as np
+
+from scipy.optimize import linear_sum_assignment
+
 def box_center(box):
     """
     计算bbox中心点。
@@ -30,6 +34,44 @@ def calculate_iou(box1, box2):
         return 0
     return inter_area / union_area
 
+
+def center_distance(box1, box2):
+    """
+    计算两个bbox中心点距离
+    """
+
+    c1_x = (box1[0] + box1[2]) / 2
+    c1_y = (box1[1] + box1[3]) / 2
+
+    c2_x = (box2[0] + box2[2]) / 2
+    c2_y = (box2[1] + box2[3]) / 2
+
+    return np.sqrt(
+        (c1_x - c2_x) ** 2 + 
+        (c1_y - c2_y) ** 2
+    )
+
+def helmet_match_cost(person_box, helmet_box):
+    """
+    计算person和helmet匹配代价
+    越小越匹配
+    """
+    head_region = get_head_region(person_box)
+
+    helmet_center = box_center(helmet_box)
+
+    # 如果帽子中心再头部区域内
+    if is_center_inside_box(helmet_center, head_region):
+        inside_score = 0
+
+    else:
+        inside_score = 200
+
+    distance = center_distance(head_region, helmet_box)
+
+    cost = (distance * 0.7 + inside_score)
+
+    return cost
 
 def normalized_distance(value, center, max_dist):
     """
@@ -137,31 +179,41 @@ def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
     helmets = [det for det in detections if det["label"] == "helmet"]
     vests = [det for det in detections if det["label"] == "safety vest"]
 
+    # Hungarian安全帽全局匹配
+    helmet_assignment = {}
+
+    if len(persons) > 0 and len(helmets) > 0:
+        cost_matrix = np.zeros(
+            (len(persons), len(helmets))
+        )
+    
+        for i, person in enumerate(persons):
+            for j, helmet in enumerate(helmets):
+                cost_matrix[i, j] = helmet_match_cost(
+                    person["bbox"],
+                    helmet["bbox"]
+                )
+    
+        rows, cols = linear_sum_assignment(cost_matrix)
+    
+        for r, c in zip(rows, cols):
+            cost = cost_matrix[r, c]
+
+            # 太远则不匹配
+            if cost < 150:
+                helmet_assignment[r] = c
+
     used_helmet_indices = set()
     used_vest_indices = set()
     person_results = []
 
-    for indx, person in enumerate(persons, start = 1):
+    for index, person in enumerate(persons, start = 1):
+        person_index = index - 1
         person_box = person["bbox"]
 
-        head_region = get_head_region(person_box)
+        person_width = (person_box[2] - person_box[0])
 
-        # # 如果Pose,优先使用关键点
-        # if pose_results:
-        #     for pose_person in pose_results:
-
-        #         if calculate_iou(
-        #             person_box,
-        #             pose_person["bbox"]
-        #         ) > 0.5:
-        #             pose_head = get_pose_head_region(
-        #                 pose_person["keypoints"]
-        #             )
-
-        #             if pose_head:
-        #                 head_region = pose_head
-
-        #             break
+        person_center_x = (person_box[0] + person_box[2]) / 2
 
         # 原35%规则 + Pose辅助
         original_head_region = get_head_region(person_box)
@@ -215,6 +267,14 @@ def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
         body_region = get_body_region(person_box)
 
         matched_helmet_index = None
+
+        if person_index in helmet_assignment:
+            matched_helmet_index = (helmet_assignment[person_index])
+            matched_helmet = helmets[matched_helmet_index]
+
+        else:
+            matched_helmet_index = None
+            
         matched_vest_index = None
 
         best_helmet_score = 0
@@ -222,27 +282,7 @@ def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
         best_helmet_center_inside = False
         best_vest_center_inside = False
 
-        # 给当前人员匹配一个尚未使用的安全帽
-        person_center_x, _ = box_center(person_box)
-        person_width = max(1.0, person_box[2] - person_box[0])
-
-        for helmet_index, helmet in enumerate(helmets):
-            if helmet_index in used_helmet_indices:
-                continue
-
-            helmet_box = helmet["bbox"]
-            helmet_center = box_center(helmet_box)
-            helmet_iou = calculate_iou(head_region, helmet_box)
-            helmet_center_inside = is_center_inside_box(helmet_center, head_region)
-            helmet_x_score = normalized_distance(helmet_center[0], person_center_x, person_width * 0.6)
-            helmet_score = helmet_iou * 0.55 + (1.0 if helmet_center_inside else 0.0) * 0.25 + helmet_x_score * 0.20
-
-            if helmet_score > best_helmet_score:
-                best_helmet_score = helmet_score
-                best_helmet_center_inside = helmet_center_inside
-                best_helmet_iou = helmet_iou
-                best_helmet_x_score = helmet_x_score
-                matched_helmet_index = helmet_index
+        
 
         # 给当前人员匹配一件尚未使用的背心
         for vest_index, vest in enumerate(vests):
@@ -263,13 +303,27 @@ def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
                 best_vest_x_score = vest_x_score
                 matched_vest_index = vest_index
 
-        has_helmet = (
-            matched_helmet_index is not None
-            and best_helmet_center_inside
-            and best_helmet_score >= 0.30
-            and best_helmet_iou >= 0.08
-            and best_helmet_x_score >= 0.30
-        )
+        has_helmet = False
+
+        if matched_helmet_index is not None:
+            helmet = helmets[matched_helmet_index]
+
+            helmet_center = box_center(helmet["bbox"])
+
+            if matched_helmet_index is not None:
+                helmet = helmets[matched_helmet_index]
+
+                helmet_center = box_center(helmet["bbox"])
+
+                if is_center_inside_box(
+                    helmet_center,
+                    head_region
+                ):
+                    has_helmet = True
+
+            if is_center_inside_box(helmet_center, head_region):
+                has_helmet = True
+
         has_vest = (
             matched_vest_index is not None
             and best_vest_center_inside
@@ -295,7 +349,7 @@ def analyze_person_safety_by_spatial_relation(detections, pose_results = None):
             risks.append("未发现明显风险")
 
         person_results.append({
-            "person_id": indx,
+            "person_id": index,
             "person_bbox": person_box,
             "has_helmet": has_helmet,
             "has_safety_vest": has_vest,
